@@ -99,7 +99,7 @@ DECLARE
     v_inv_types     TEXT[] := ARRAY['380','380','380','380','380','380','380','380','381','384'];
     v_peppol_states TEXT[] := ARRAY['RECEIVED','RECEIVED','RECEIVED','RECEIVED','TRANSIT','SENT','SENT','FAILED','DRAFT','DRAFT'];
     v_directions    TEXT[] := ARRAY['received','received','received','received','received','sent','sent','sent'];
-    v_pay_means     TEXT[] := ARRAY['30','30','30','30','31','42','48','58'];
+    v_pay_means_arr TEXT[] := ARRAY['30','30','30','30','31','42','48','58'];
     -- Tax profiles: (category, percent)
     v_tax_cats      TEXT[]    := ARRAY['S','S','S','S','S','S','S','Z','E','AE'];
     v_tax_percents  NUMERIC[] := ARRAY[21,21,21,21,21,21,6,0,0,0];
@@ -160,7 +160,7 @@ BEGIN
         v_inv_type     := v_inv_types    [1 + floor(random() * 10)::int];
         v_direction    := v_directions   [1 + floor(random() * 8)::int];
         v_peppol_state := v_peppol_states[1 + floor(random() * 10)::int];
-        v_pay_means    := v_pay_means    [1 + floor(random() * 8)::int];
+        v_pay_means    := v_pay_means_arr[1 + floor(random() * 8)::int];
         v_rand_idx     := 1 + floor(random() * 10)::int;
         v_tax_cat      := v_tax_cats    [v_rand_idx];
         v_tax_pct      := v_tax_percents[v_rand_idx];
