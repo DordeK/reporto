@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InvoiceAI — E-Invoicing Hackathon Presentation</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --danger: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    background: rgba(10,14,26,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── SLIDE SYSTEM ── */
+  .slide {
+    min-height: 100vh;
+    padding: 120px 80px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .slide-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    margin-bottom: 20px;
+  }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; }
+
+  p { color: var(--muted); line-height: 1.7; font-size: 1.05rem; }
+  p + p { margin-top: 12px; }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    background:
+      radial-gradient(ellipse 80% 60% at 60% 40%, rgba(59,130,246,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(99,102,241,0.08) 0%, transparent 60%),
+      var(--bg);
+    text-align: center;
+    align-items: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 28px;
+    letter-spacing: 0.5px;
+  }
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    color: var(--muted);
+    max-width: 680px;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+  }
+  .hero-tags {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .tag {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .tag.green { border-color: rgba(16,185,129,0.4); color: var(--accent3); background: rgba(16,185,129,0.06); }
+  .tag.blue  { border-color: rgba(59,130,246,0.4); color: var(--accent); background: rgba(59,130,246,0.06); }
+  .tag.purple{ border-color: rgba(99,102,241,0.4); color: var(--accent2); background: rgba(99,102,241,0.06); }
+  .tag.amber { border-color: rgba(245,158,11,0.4); color: var(--accent4); background: rgba(245,158,11,0.06); }
+
+  /* ── ADVENTURE SLIDE ── */
+  #adventure {
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 50%, rgba(245,158,11,0.07) 0%, transparent 70%),
+      var(--bg);
+  }
+  .adventure-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 40px;
+    align-items: center;
+  }
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .timeline-item {
+    display: flex;
+    gap: 20px;
+    position: relative;
+  }
+  .timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 44px;
+    width: 2px;
+    height: calc(100% - 4px);
+    background: var(--border);
+  }
+  .timeline-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    z-index: 1;
+  }
+  .dot-red    { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); }
+  .dot-amber  { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); }
+  .dot-blue   { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4); }
+  .dot-green  { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); }
+  .timeline-content {
+    padding-bottom: 32px;
+  }
+  .timeline-content h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .timeline-content p {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .photo-placeholder {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(245,158,11,0.04), rgba(59,130,246,0.04));
+  }
+  .photo-placeholder .emoji { font-size: 3rem; }
+  .photo-placeholder .caption {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--accent4);
+    max-width: 220px;
+    line-height: 1.4;
+  }
+  .quote-box {
+    background: var(--surface);
+    border-left: 3px solid var(--accent4);
+    border-radius: 0 12px 12px 0;
+    padding: 20px 24px;
+    margin-top: 24px;
+  }
+  .quote-box p {
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .quote-box .author {
+    font-size: 0.8rem;
+    color: var(--accent4);
+    margin-top: 8px;
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* ── PROBLEM ── */
+  #problem {
+    background:
+      radial-gradient(ellipse 50% 50% at 80% 30%, rgba(239,68,68,0.07) 0%, transparent 60%),
+      var(--bg);
+  }
+  .problem-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin: 40px 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.red::before   { background: linear-gradient(90deg, var(--danger), transparent); }
+  .stat-card.blue::before  { background: linear-gradient(90deg, var(--accent), transparent); }
+  .stat-card.amber::before { background: linear-gradient(90deg, var(--accent4), transparent); }
+  .stat-card:hover { border-color: rgba(59,130,246,0.3); }
+  .stat-number {
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-card.red   .stat-number { color: var(--danger); }
+  .stat-card.blue  .stat-number { color: var(--accent); }
+  .stat-card.amber .stat-number { color: var(--accent4); }
+  .stat-label {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── SOLUTION ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .arch-card:hover { transform: translateY(-3px); border-color: rgba(59,130,246,0.35); }
+  .arch-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+  .arch-card h3 { font-size: 0.95rem; margin-bottom: 8px; }
+  .arch-card p  { font-size: 0.82rem; line-height: 1.5; }
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--muted);
+    padding-top: 20px;
+  }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 40px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    gap: 20px;
+    transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: rgba(99,102,241,0.35); }
+  .feature-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+  .feature-card p  { font-size: 0.86rem; line-height: 1.55; }
+
+  /* ── TECH STACK ── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 40px;
+  }
+  .stack-layer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .stack-layer-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .stack-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .stack-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+  .stack-badge {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── JUDGES ── */
+  #judges {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(99,102,241,0.08) 0%, transparent 70%),
+      var(--bg);
+  }
+  .judges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 40px;
+  }
+  .judge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px;
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .judge-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    opacity: 0.7;
+  }
+  .jc-1::before { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+  .jc-2::before { background: linear-gradient(90deg, #10b981, #3b82f6); }
+  .jc-3::before { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+  .jc-4::before { background: linear-gradient(90deg, #10b981, #6366f1); }
+  .jc-5::before { background: linear-gradient(90deg, #6366f1, #ec4899); }
+  .judge-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.35); }
+  .judge-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 16px;
+    color: #fff;
+    letter-spacing: -1px;
+  }
+  .judge-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+  .judge-role {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  .judge-relevance {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.5;
+    border: 1px solid var(--border);
+  }
+  .judge-relevance strong { color: var(--text); }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .badge-gold    { background: rgba(245,158,11,0.15); color: var(--accent4); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-blue    { background: rgba(59,130,246,0.15); color: var(--accent);  border: 1px solid rgba(59,130,246,0.3); }
+  .badge-green   { background: rgba(16,185,129,0.15); color: var(--accent3); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-purple  { background: rgba(99,102,241,0.15); color: var(--accent2); border: 1px solid rgba(99,102,241,0.3); }
+
+  /* ── MARKET ── */
+  .market-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 40px;
+    align-items: start;
+  }
+  .market-stat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .market-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .market-stat-num {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--accent3);
+    white-space: nowrap;
+  }
+  .market-stat-desc {
+    font-size: 0.86rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .eu-mandate-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .mandate-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .mandate-item:last-child { border-bottom: none; }
+  .mandate-year {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 44px;
+  }
+  .mandate-desc { font-size: 0.86rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── CTA ── */
+  #cta {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(59,130,246,0.1) 0%, transparent 70%),
+      var(--bg);
+    text-align: center;
+    align-items: center;
+    min-height: 60vh;
+  }
+  .cta-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 36px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    letter-spacing: -0.2px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: rgba(99,102,241,0.4); }
+
+  /* ── UTILITIES ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .divider { height: 1px; background: var(--border); margin: 28px 0; }
+  .max-w   { max-width: 800px; }
+
+  .highlight-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent3);
+    margin-right: 8px;
+    margin-bottom: 6px;
+  }
+
+  .anomaly-demo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 32px;
+  }
+  .anomaly-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .anomaly-row {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 120px 1fr 80px;
+    gap: 16px;
+    align-items: center;
+    font-size: 0.86rem;
+  }
+  .anomaly-row:last-child { border-bottom: none; }
+  .anomaly-id { font-family: 'Courier New', monospace; color: var(--accent); font-size: 0.8rem; }
+  .anomaly-text { color: var(--muted); line-height: 1.4; }
+  .severity {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-align: center;
+  }
+  .sev-high   { background: rgba(239,68,68,0.15);  color: var(--danger); }
+  .sev-medium { background: rgba(245,158,11,0.15); color: var(--accent4); }
+  .sev-low    { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+  /* ── SCROLL INDICATOR ── */
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(6px); }
+  }
+
+  /* ── PEPPOL BADGE ── */
+  .peppol-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 0.84rem;
+    color: var(--accent);
+    font-weight: 500;
+    margin-top: 16px;
+  }
+
+  .caveman-banner {
+    background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(239,68,68,0.08));
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .caveman-banner .icon { font-size: 2rem; }
+  .caveman-banner p { font-size: 0.9rem; color: var(--text); line-height: 1.5; }
+  .caveman-banner strong { color: var(--accent4); }
+
+  @media (max-width: 900px) {
+    .slide { padding: 100px 24px 60px; }
+    .arch-grid, .problem-stats, .stack-grid { grid-template-columns: 1fr 1fr; }
+    .features-grid, .market-grid, .adventure-grid, .grid-2 { grid-template-columns: 1fr; }
+    nav { padding: 14px 24px; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">⚡ InvoiceAI</span>
+  <ul class="nav-links">
+    <li><a href="#hero">Home</a></li>
+    <li><a href="#adventure">Our Story</a></li>
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#solution">Solution</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#tech">Tech</a></li>
+    <li><a href="#market">Market</a></li>
+    <li><a href="#judges">Judges</a></li>
+  </ul>
+</nav>
+
+<!-- ════════════════ HERO ════════════════ -->
+<section class="slide" id="hero">
+  <div class="hero-eyebrow">
+    <span>🇧🇪</span> e-Invoicing Hackathon · Belgium 2026
+  </div>
+  <h1 class="gradient-text">AI-Powered<br>E-Invoice Intelligence</h1>
+  <p class="hero-sub">
+    We automated the entire accounts-payable intake pipeline — from raw Peppol UBL XML
+    to AI-flagged anomalies — in one hackathon. No manual rules. No missed duplicates.
+    No wrong VAT calculations slipping through.
+  </p>
+  <div class="hero-tags">
+    <span class="tag blue">🔗 Peppol / UBL 2.1</span>
+    <span class="tag green">🤖 LLM Anomaly Detection</span>
+    <span class="tag purple">📊 Real-time Dashboard</span>
+    <span class="tag amber">🇧🇪 Belgian VAT Compliance</span>
+    <span class="tag blue">⚡ FastAPI + Next.js</span>
+    <span class="tag green">🐘 PostgreSQL</span>
+  </div>
+  <div class="scroll-hint">↓ &nbsp; scroll</div>
+</section>
+
+<!-- ════════════════ ADVENTURE SLIDE ════════════════ -->
+<section class="slide" id="adventure">
+  <div class="slide-label">The Origin Story</div>
+  <h2>We Built This <span class="gradient-text">From 30,000 Feet</span></h2>
+  <p class="max-w">
+    Most hackathon teams sleep in on Saturday. We flew in from Slovenia —
+    and then our flight got cancelled. What followed was a very Belgian kind of chaos.
+  </p>
+
+  <div class="adventure-grid">
+    <div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot dot-red">✈️</div>
+          <div class="timeline-content">
+            <h4>06:00 AM — Ljubljana Airport</h4>
+            <p>Early morning flight to Brussels. Bags packed, laptops charged, coffee in hand. Ready to build.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot dot-red">❌</div>
+          <div class="timeline-content">
+            <h4>Flight Cancelled</h4>
+            <p>The airline had other plans. Scramble begins. No panic — just pivot mode activated.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot dot-amber">💻</div>
+          <div class="timeline-content">
+            <h4>Airport Terminal → Gate → Air</h4>
+            <p>Laptops out at the gate. Coding in the terminal. Coding on the plane. No IDE autocomplete,
+            no hot-reload, no second monitor. Just us and a text editor — proper caveman engineering.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot dot-blue">🚌</div>
+          <div class="timeline-content">
+            <h4>Rerouted — Still Coding</h4>
+            <p>Bus, taxi, rebooked connection. Every transit segment was a coding session.
+            Architecture decisions made at 600km/h.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot dot-green">🏁</div>
+          <div class="timeline-content">
+            <h4>Arrived — Late. Shipped — On Time.</h4>
+            <p>Missed half the hackathon. But the full stack was built, deployed, and demo-ready by presentation time.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="quote-box">
+        <p>"We had to go back to the old days — write code manually, like cavemen. No fancy IDE,
+        no live reload, just pure logic and a lot of airport coffee."</p>
+        <div class="author">— The Team, somewhere over Central Europe</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="photo-placeholder">
+        <div class="emoji">📸</div>
+        <strong style="font-size:1rem; color: var(--text);">[ INSERT AIRPLANE PHOTO HERE ]</strong>
+        <p class="caption">
+          Drop your photo of coding on the plane right here — it'll replace this placeholder
+          perfectly as an &lt;img&gt; tag.
+        </p>
+        <div style="margin-top: 12px; font-size: 0.75rem; color: var(--muted); font-family: monospace; background: var(--surface2); padding: 8px 12px; border-radius: 6px; text-align:left; width: 100%;">
+          &lt;img src="your-photo.jpg"<br>&nbsp;&nbsp;style="width:100%;border-radius:14px;"&gt;
+        </div>
+      </div>
+
+      <div class="caveman-banner" style="margin-top: 20px;">
+        <span class="icon">🦴</span>
+        <p>
+          <strong>Caveman Mode: ACTIVATED</strong><br>
+          No GitHub Copilot. No AI autocomplete. No wifi half the time.
+          Just raw TypeScript and Python typed by hand — the way Linus Torvalds intended.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ PROBLEM ════════════════ -->
+<section class="slide" id="problem">
+  <div class="slide-label">The Problem</div>
+  <h2>AP Teams Are <span class="gradient-text">Drowning in Invoices</span></h2>
+  <p class="max-w">
+    Every company receives hundreds of supplier invoices every month. Today, finance teams
+    manually verify VAT calculations, hunt for duplicates, chase missing registration numbers,
+    and check due dates — work that is <strong style="color:var(--danger)">tedious, error-prone, and adds zero value</strong>.
+  </p>
+
+  <div class="problem-stats">
+    <div class="stat-card red">
+      <div class="stat-number">€50B+</div>
+      <div class="stat-label">lost annually to invoice fraud and VAT errors across EU companies</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-number">~12 min</div>
+      <div class="stat-label">average time an AP clerk spends manually processing a single invoice</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-number">2026</div>
+      <div class="stat-label">Belgian e-invoicing mandate for B2B — every company must comply, now</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:8px; gap: 24px;">
+    <div class="stat-card" style="border-color: rgba(239,68,68,0.2);">
+      <h3 style="margin-bottom:12px; color:var(--danger)">Today's Pain</h3>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>❌</span> Manual duplicate detection — misses cross-period entries</div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>❌</span> Spreadsheet-based VAT reconciliation</div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>❌</span> No audit trail for rejected invoices</div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>❌</span> Impossible to scale without headcount</div>
+      </div>
+    </div>
+    <div class="stat-card" style="border-color: rgba(16,185,129,0.2);">
+      <h3 style="margin-bottom:12px; color:var(--accent3)">What We Built</h3>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>✅</span> LLM detects every duplicate, cross-period and same-period</div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>✅</span> Automatic VAT calculation verification per line item</div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>✅</span> Full immutable audit log for every action</div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--muted)"><span>✅</span> Scales to millions of invoices with zero extra headcount</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ SOLUTION / ARCH ════════════════ -->
+<section class="slide" id="solution">
+  <div class="slide-label">The Solution</div>
+  <h2>End-to-End <span class="gradient-text">Invoice Intelligence</span></h2>
+  <p class="max-w">
+    A fully automated pipeline: ingest structured Peppol invoices, parse them into a
+    queryable database, run AI anomaly detection, and surface exceptions in a clean dashboard.
+    Finance teams review only what matters — everything else is approved automatically.
+  </p>
+
+  <div class="arch-grid" style="margin-top:40px;">
+    <div class="arch-card">
+      <div class="arch-icon" style="background:rgba(59,130,246,0.12)">📡</div>
+      <h3>Peppol Ingestion</h3>
+      <p>Pulls UBL 2.1 XML invoices from the mock Peppol network provider. Standard e-invoicing format used across all EU mandates.</p>
+      <div class="peppol-badge" style="font-size:0.76rem; margin-top:12px; padding:6px 10px;">
+        UBL 2.1 · ISO 20022
+      </div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon" style="background:rgba(99,102,241,0.12)">🔍</div>
+      <h3>Smart Parser</h3>
+      <p>Extracts all structured fields — supplier, customer, line items, VAT subtotals, due dates, payment terms — into normalised PostgreSQL rows.</p>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon" style="background:rgba(16,185,129,0.12)">🤖</div>
+      <h3>AI Anomaly Engine</h3>
+      <p>LLM acts as a senior AP auditor. Detects duplicates, VAT mismatches, impossible dates, missing IDs, and reverse-charge violations.</p>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon" style="background:rgba(245,158,11,0.12)">📊</div>
+      <h3>Live Dashboard</h3>
+      <p>Finance teams see flagged exceptions with plain-language explanations and severity ratings. Approve clean invoices in bulk.</p>
+    </div>
+  </div>
+
+  <!-- Demo anomaly table -->
+  <div class="anomaly-demo">
+    <div class="anomaly-header">
+      <span>🤖</span> AI Anomaly Detection — Sample Output
+    </div>
+    <div class="anomaly-row">
+      <div class="anomaly-id">INV-A-003</div>
+      <div class="anomaly-text">Duplicate invoice number from TechSupplier BV — same ID submitted on 2025-11-12 and 2025-11-15 with identical line items</div>
+      <div class="severity sev-high">HIGH</div>
+    </div>
+    <div class="anomaly-row">
+      <div class="anomaly-id">INV-B-002</div>
+      <div class="anomaly-text">VAT mismatch: declared €847.50 but calculated €823.20 based on line item subtotals (Δ €24.30)</div>
+      <div class="severity sev-high">HIGH</div>
+    </div>
+    <div class="anomaly-row">
+      <div class="anomaly-id">INV-C-005</div>
+      <div class="anomaly-text">Due date (2026-01-10) is before issue date (2026-01-15) — impossible payment term</div>
+      <div class="severity sev-medium">MED</div>
+    </div>
+    <div class="anomaly-row">
+      <div class="anomaly-id">INV-D-001</div>
+      <div class="anomaly-text">Reverse-charge invoice contains non-zero VAT amount (€1,200). Under BE VAT Art. 51 this must be zero.</div>
+      <div class="severity sev-high">HIGH</div>
+    </div>
+    <div class="anomaly-row">
+      <div class="anomaly-id">INV-E-003</div>
+      <div class="anomaly-text">Supplier VAT registration number missing. Cannot reclaim input VAT without valid BE0123456789 identifier.</div>
+      <div class="severity sev-medium">MED</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ FEATURES ════════════════ -->
+<section class="slide" id="features">
+  <div class="slide-label">Features</div>
+  <h2>Everything a <span class="gradient-text">Finance Team Needs</span></h2>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📥</div>
+      <div>
+        <h3>One-Click Peppol Ingestion</h3>
+        <p>Click "Fetch from Provider" — the backend pulls all pending invoices from the Peppol network, parses every XML field, and persists them in under 2 seconds.</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔎</div>
+      <div>
+        <h3>Deep Invoice Inspection</h3>
+        <p>Full parsed detail view for every invoice: all line items, tax subtotals, supplier & customer details, and payment terms. Nothing hidden.</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <div>
+        <h3>LLM-Powered Audit</h3>
+        <p>The model reasons across all invoices simultaneously — catching cross-invoice patterns like duplicates that rule-based systems miss entirely.</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div>
+        <h3>Plain-Language Explanations</h3>
+        <p>Each anomaly comes with a plain-language explanation of what's wrong, why it matters, and what action to take. No technical jargon for finance staff.</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔬</div>
+      <div>
+        <h3>Belgian VAT Reports</h3>
+        <p>Generates Belgian VAT return summaries with grid-level breakdown — ready to feed directly into Intervat or your ERP system.</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📜</div>
+      <div>
+        <h3>Immutable Audit Log</h3>
+        <p>Every action — fetch, anomaly detection run, manual override — is logged with timestamp and user. Full compliance trail for auditors and regulators.</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📤</div>
+      <div>
+        <h3>Manual Upload Support</h3>
+        <p>Upload UBL 2.1 XML files directly via drag-and-drop. Works for invoices that arrive outside the Peppol network — email attachments, portal downloads.</p>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div>
+        <h3>AI Report Chat</h3>
+        <p>Ask natural language questions about your invoice data — "show me all invoices from TechSupplier with VAT issues this quarter" — and get instant answers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ TECH STACK ════════════════ -->
+<section class="slide" id="tech">
+  <div class="slide-label">Tech Stack</div>
+  <h2>Built Lean, <span class="gradient-text">Built to Scale</span></h2>
+  <p class="max-w">
+    Standard, auditable, production-ready stack. No exotic dependencies.
+    Containerised with Docker Compose. API-first design means it can slot into any ERP or
+    accounting system as a microservice.
+  </p>
+
+  <div class="stack-grid">
+    <div class="stack-layer">
+      <div class="stack-layer-title" style="color: var(--accent)">Frontend</div>
+      <div class="stack-items">
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent)"></div>Next.js 15 (App Router)</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent)"></div>TypeScript</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent)"></div>Tailwind CSS</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent)"></div>Recharts (VAT analytics)</div>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-layer-title" style="color: var(--accent2)">Backend</div>
+      <div class="stack-items">
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent2)"></div>FastAPI (async Python)</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent2)"></div>SQLAlchemy (async ORM)</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent2)"></div>PostgreSQL 16</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent2)"></div>lxml — UBL 2.1 XML parser</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent2)"></div>OpenAI GPT-4o-mini</div>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-layer-title" style="color: var(--accent3)">Infrastructure</div>
+      <div class="stack-items">
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent3)"></div>Docker Compose</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent3)"></div>Mock Peppol Provider</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent3)"></div>25 real UBL XML samples</div>
+        <div class="stack-item"><div class="stack-badge" style="background:var(--accent3)"></div>REST API + Swagger docs</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 36px;">
+    <div class="slide-label" style="margin-bottom:16px">API Endpoints</div>
+    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+      <span class="highlight-pill">GET /invoices</span>
+      <span class="highlight-pill">GET /invoices/{id}</span>
+      <span class="highlight-pill">POST /invoices/fetch</span>
+      <span class="highlight-pill">POST /invoices/detect-anomalies</span>
+      <span class="highlight-pill">GET /anomalies</span>
+      <span class="highlight-pill">GET /reports</span>
+      <span class="highlight-pill">GET /dashboard</span>
+      <span class="highlight-pill">GET /audit-logs</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ MARKET ════════════════ -->
+<section class="slide" id="market">
+  <div class="slide-label">Market Opportunity</div>
+  <h2>EU Mandate Creates <span class="gradient-text">Unavoidable Demand</span></h2>
+
+  <div class="market-grid">
+    <div class="market-stat-row">
+      <div class="market-stat">
+        <div class="market-stat-num">€30B</div>
+        <div class="market-stat-desc">global e-invoicing market projected by 2028 — growing at 20% CAGR</div>
+      </div>
+      <div class="market-stat">
+        <div class="market-stat-num">450K+</div>
+        <div class="market-stat-desc">Belgian companies that must adopt e-invoicing under the 2026 B2B mandate</div>
+      </div>
+      <div class="market-stat">
+        <div class="market-stat-num">27</div>
+        <div class="market-stat-desc">EU member states rolling out e-invoicing mandates by 2030 — every one a new market</div>
+      </div>
+      <div class="market-stat">
+        <div class="market-stat-num">90%</div>
+        <div class="market-stat-desc">of companies still process invoices with zero automated anomaly detection</div>
+      </div>
+    </div>
+
+    <div class="eu-mandate-card">
+      <h3 style="margin-bottom: 20px; color: var(--accent)">EU e-Invoicing Rollout</h3>
+      <div class="mandate-item">
+        <div class="mandate-year">2024</div>
+        <div class="mandate-desc">Italy ViDA — mandatory B2B e-invoicing fully enforced. 40M invoices/month.</div>
+      </div>
+      <div class="mandate-item">
+        <div class="mandate-year" style="color:var(--accent4)">2026 ★</div>
+        <div class="mandate-desc"><strong style="color:var(--accent4)">Belgium</strong> — B2B e-invoicing mandate live. All companies must use Peppol-compatible format.</div>
+      </div>
+      <div class="mandate-item">
+        <div class="mandate-year">2027</div>
+        <div class="mandate-desc">Germany, France — phased mandatory e-invoicing for large companies.</div>
+      </div>
+      <div class="mandate-item">
+        <div class="mandate-year">2030</div>
+        <div class="mandate-desc">EU ViDA — harmonised real-time digital VAT reporting across all 27 member states.</div>
+      </div>
+      <div style="margin-top: 20px; padding: 14px 16px; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius: 10px; font-size: 0.84rem; color: var(--accent3);">
+        ✅ Our system is built on Peppol + UBL 2.1 — the <strong>exact standard</strong> mandated by the Belgian 2026 legislation and the EU ViDA framework.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ JUDGES ════════════════ -->
+<section class="slide" id="judges">
+  <div class="slide-label">Why This Matters — To Each of You</div>
+  <h2>Built for the <span class="gradient-text">People in This Room</span></h2>
+  <p class="max-w">
+    Every judge on this panel works on a piece of the puzzle we assembled today.
+    Here's why we think InvoiceAI is relevant to your world.
+  </p>
+
+  <div class="judges-grid">
+
+    <!-- Tibo Wiels -->
+    <div class="judge-card jc-1">
+      <div class="judge-avatar" style="background: linear-gradient(135deg, #3b82f6, #6366f1)">TW</div>
+      <div class="badge badge-gold">Forbes 30u30 · YC X25</div>
+      <h3>Tibo Wiels</h3>
+      <div class="judge-role">Co-Founder & CPO @ BOND (YC X25)</div>
+      <div class="judge-relevance">
+        <strong>Why InvoiceAI resonates with a YC-backed CPO:</strong> BOND is building
+        at the intersection of fintech infrastructure and developer tools — exactly where
+        we sit. This is a zero-to-one product built in &lt;12h with a clear wedge,
+        a defined ICP (SME finance teams), and a regulatory tailwind that creates
+        forcing-function adoption. The same pattern BOND likely pitches to YC:
+        mandate creates market, AI creates moat.
+      </div>
+    </div>
+
+    <!-- Lazare Kolebka -->
+    <div class="judge-card jc-2">
+      <div class="judge-avatar" style="background: linear-gradient(135deg, #10b981, #3b82f6)">LK</div>
+      <div class="badge badge-green">Data & AI · Collibra</div>
+      <h3>Lazare Kolebka</h3>
+      <div class="judge-role">Data & AI · Product @ Collibra</div>
+      <div class="judge-relevance">
+        <strong>Why the Collibra data team should care:</strong> Invoice data is some of
+        the most structurally rich financial data a company generates — supplier relationships,
+        spend categories, VAT flows. We parse it into a queryable, governed dataset.
+        Collibra's data catalog and lineage tools are the natural next layer on top of exactly
+        what we built today. This is a data-quality-first pipeline.
+      </div>
+    </div>
+
+    <!-- Willem De Groef -->
+    <div class="judge-card jc-3">
+      <div class="judge-avatar" style="background: linear-gradient(135deg, #f59e0b, #ef4444)">WG</div>
+      <div class="badge badge-purple">CTO · e-invoice.be</div>
+      <h3>Willem De Groef</h3>
+      <div class="judge-role">CTO @ e-invoice.be · Cofounder @ SevenYoken</div>
+      <div class="judge-relevance">
+        <strong>Why the e-invoice.be CTO will appreciate the technical depth:</strong>
+        We didn't mock the invoicing layer — we built a real Peppol-compatible UBL 2.1
+        ingestion pipeline with namespace-aware XML parsing, proper VAT grid logic,
+        and a mock provider that mirrors the real Peppol network API contract.
+        You'll recognise the schema. It's production-grade for a hackathon.
+      </div>
+    </div>
+
+    <!-- Ann Wuyts -->
+    <div class="judge-card jc-4">
+      <div class="judge-avatar" style="background: linear-gradient(135deg, #10b981, #6366f1)">AW</div>
+      <div class="badge badge-green">Search & Data Marketplace · Collibra</div>
+      <h3>Ann Wuyts</h3>
+      <div class="judge-role">Search & Data Marketplace Senior Lead @ Collibra</div>
+      <div class="judge-relevance">
+        <strong>Why our data model is marketplace-ready:</strong> Every invoice we ingest
+        becomes a structured, searchable, categorised record. Our natural-language
+        report chat lets users query spend data the way Collibra's marketplace lets teams
+        discover and query enterprise datasets. The AI layer we built today is exactly
+        the kind of intelligent search Collibra's marketplace needs for financial data products.
+      </div>
+    </div>
+
+    <!-- Jerome Leclanche -->
+    <div class="judge-card jc-5">
+      <div class="judge-avatar" style="background: linear-gradient(135deg, #6366f1, #ec4899)">JL</div>
+      <div class="badge badge-purple">AI Lab CEO · Stripe Partner</div>
+      <h3>Jerome Leclanche</h3>
+      <div class="judge-role">AI Lab CEO @ Ingram Technologies · Stripe Partner since 2013</div>
+      <div class="judge-relevance">
+        <strong>Why a Stripe partner and AI Lab CEO should be excited:</strong>
+        Stripe's philosophy is "financial infrastructure as code." We applied that
+        to the invoice layer. An AI Lab CEO will recognise the pattern: a narrow,
+        well-scoped domain (AP audit) where LLM reasoning reliably outperforms
+        deterministic rules. The anomaly engine is prompt-driven, model-agnostic,
+        and observable — exactly how production AI should be built.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════ CTA ════════════════ -->
+<section class="slide" id="cta">
+  <div class="slide-label">Thank You</div>
+  <h1>Invoice AI <span class="gradient-text">→ Live Demo</span></h1>
+  <p style="max-width: 560px; text-align: center;">
+    We flew from Slovenia, lost half a day to a cancelled flight, coded on a plane
+    like it was 1999 — and still shipped a full-stack, AI-powered e-invoice platform.
+    That's the kind of team you want building your AP automation.
+  </p>
+
+  <div style="margin-top:28px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+    <span class="tag green">✅ Full-stack demo running</span>
+    <span class="tag blue">✅ 25 real UBL XML invoices</span>
+    <span class="tag amber">✅ LLM anomaly detection live</span>
+    <span class="tag purple">✅ Belgian VAT reports</span>
+  </div>
+
+  <div class="cta-buttons">
+    <a href="http://localhost:3000" class="btn btn-primary">🚀 Open Live Demo</a>
+    <a href="http://localhost:8000/docs" class="btn btn-secondary">📖 API Docs</a>
+  </div>
+
+  <div style="margin-top:56px; padding-top:40px; border-top:1px solid var(--border); text-align:center; width:100%;">
+    <p style="font-size:0.82rem; color: var(--muted);">
+      Built at the Belgian e-Invoicing Hackathon 2026 · UBL 2.1 · Peppol · FastAPI · Next.js · GPT-4o-mini · PostgreSQL
+    </p>
+    <p style="font-size:0.8rem; color: var(--muted); margin-top:6px; font-style:italic;">
+      Partially assembled at 30,000 feet above Central Europe ✈️
+    </p>
+  </div>
+</section>
+
+</body>
+</html>
