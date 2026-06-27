@@ -67,6 +67,7 @@ export default function ReportChat({ messages, onSubmit, onSelectReport, loading
           </div>
         )}
 
+
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -142,31 +143,26 @@ export default function ReportChat({ messages, onSubmit, onSelectReport, loading
       </div>
 
       {/* Sample Prompts */}
-      {messages.length === 0 && (
-        <div className="px-4 pb-3">
-          <p className="text-xs mb-2" style={{ color: "#64748b" }}>
-            Try these prompts:
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {SAMPLE_PROMPTS.map((p) => (
-              <button
-                key={p}
-                onClick={() => onSubmit(p)}
-                disabled={loading}
-                className="text-xs px-3 py-1.5 rounded-lg transition-colors"
-                style={{
-                  background: "rgba(59,130,246,0.1)",
-                  border: "1px solid rgba(59,130,246,0.25)",
-                  color: "#60a5fa",
-                  cursor: "pointer",
-                }}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+      <div className="px-4 pb-3">
+        <div className="flex flex-wrap gap-1.5">
+          {SAMPLE_PROMPTS.map((p) => (
+            <button
+              key={p}
+              onClick={() => onSubmit(p)}
+              disabled={loading}
+              className="text-xs px-3 py-1.5 rounded-lg transition-colors"
+              style={{
+                background: "rgba(59,130,246,0.1)",
+                border: "1px solid rgba(59,130,246,0.25)",
+                color: "#60a5fa",
+                cursor: "pointer",
+              }}
+            >
+              {p}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* Input */}
       <div
