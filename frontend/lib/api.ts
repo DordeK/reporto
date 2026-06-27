@@ -273,3 +273,62 @@ export async function listAnomalies(severity?: string): Promise<Anomaly[]> {
   const qs = severity ? `?severity=${severity}` : "";
   return apiFetch<Anomaly[]>(`/anomalies${qs}`);
 }
+
+export interface OutgoingLine {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  tax_percent: number;
+  tax_category: string;
+  unit_code?: string;
+}
+
+export interface OutgoingParty {
+  name: string;
+  vat_id: string;
+  street_name?: string;
+  city_name?: string;
+  postal_zone?: string;
+  country_code: string;
+  endpoint_id?: string;
+  endpoint_scheme?: string;
+  iban?: string;
+  contact_email?: string;
+  contact_telephone?: string;
+  contact_name?: string;
+}
+
+export interface SendInvoicePayload {
+  invoice_number: string;
+  issue_date: string;
+  due_date?: string;
+  currency: string;
+  note?: string;
+  payment_terms_note?: string;
+  buyer_reference?: string;
+  supplier: OutgoingParty;
+  customer: OutgoingParty;
+  lines: OutgoingLine[];
+  send_via_peppol: boolean;
+}
+
+export interface SendInvoiceResult {
+  invoice_id: string;
+  status: string;
+  ubl_xml: string;
+  peppol: Record<string, unknown> | null;
+  peppol_error: string | null;
+}
+
+export async function sendInvoice(payload: SendInvoicePayload): Promise<SendInvoiceResult> {
+  const r = await fetch(`${BASE_URL}/invoices/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => "Unknown error");
+    throw new Error(`Send failed ${r.status}: ${text}`);
+  }
+  return r.json();
+}

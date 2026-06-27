@@ -26,6 +26,95 @@ router = APIRouter()
 
 
 # ---------------------------------------------------------------------------
+# POST /invoices/send
+# ---------------------------------------------------------------------------
+
+@router.post("/send")
+async def send_invoice(
+    body: dict,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Compose a UBL 2.1 invoice, optionally send it via Peppol (e-invoice.be),
+    and store it in the database as direction='sent'.
+
+    Body fields:
+      invoice_number, issue_date, due_date, currency,
+      supplier: {name, vat_id, street_name, city_name, postal_zone, country_code,
+                  endpoint_id, iban, contact_email},
+      customer: {name, vat_id, street_name, city_name, postal_zone, country_code,
+                  endpoint_id},
+      lines: [{description, quantity, unit_price, tax_percent, tax_category}],
+      note, payment_terms_note, buyer_reference,
+      send_via_peppol: bool (default true)
+    """
+    from app.services.ubl_builder import build_ubl_invoice
+    from app.services import einvoice_be, audit_service
+
+    actor = request.headers.get("X-User-Id", "anonymous")
+    ip = request.client.host if request.client else None
+
+    # 1. Build UBL XML
+    try:
+        ubl_xml = build_ubl_invoice(body)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"UBL build failed: {exc}")
+
+    # 2. Optionally send via Peppol
+    peppol_response: dict | None = None
+    peppol_error: str | None = None
+    send_via_peppol = body.get("send_via_peppol", True)
+
+    if send_via_peppol and settings.EINVOICE_BE_API_KEY:
+        try:
+            peppol_response = await einvoice_be.send_outbox_invoice(body)
+        except Exception as exc:
+            peppol_error = str(exc)
+
+    # 3. Ingest into DB as direction='sent'
+    result = await ingest_xml(db, ubl_xml, source="sent", filename=f"{body.get('invoice_number', 'invoice')}.xml")
+
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result.get("error", "Ingestion failed"))
+
+    # 4. Tag as sent + store peppol metadata
+    if result.get("invoice_id"):
+        from sqlalchemy import select as sa_select
+        inv_result = await db.execute(sa_select(Invoice).where(Invoice.id == uuid.UUID(result["invoice_id"])))
+        inv = inv_result.scalar_one_or_none()
+        if inv:
+            inv.direction = "sent"
+            if peppol_response:
+                inv.peppol_document_id = peppol_response.get("id")
+                inv.peppol_state = peppol_response.get("state")
+            await db.flush()
+
+    await db.commit()
+
+    await audit_service.log_action(
+        db, action="invoice.send",
+        entity_type="invoice", entity_id=result.get("invoice_id"),
+        actor=actor, ip_address=ip,
+        details={
+            "invoice_number": body.get("invoice_number"),
+            "customer": body.get("customer", {}).get("name"),
+            "peppol_sent": peppol_response is not None,
+            "peppol_error": peppol_error,
+        },
+    )
+    await db.commit()
+
+    return {
+        "invoice_id": result.get("invoice_id"),
+        "status": result["status"],
+        "ubl_xml": ubl_xml,
+        "peppol": peppol_response,
+        "peppol_error": peppol_error,
+    }
+
+
+# ---------------------------------------------------------------------------
 # POST /invoices/upload
 # ---------------------------------------------------------------------------
 

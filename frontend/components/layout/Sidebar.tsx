@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Settings,
   Zap,
+  SendHorizonal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { listAnomalies } from "@/lib/api";
@@ -17,6 +18,7 @@ import { listAnomalies } from "@/lib/api";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/upload", label: "Upload Invoices", icon: Upload },
+  { href: "/send", label: "Send Invoice", icon: SendHorizonal, badge: "Peppol" },
   { href: "/invoices", label: "Invoices", icon: FileText },
   { href: "/reports", label: "Report Assistant", icon: MessageSquare, badge: "AI" },
   { href: "/anomalies", label: "Anomaly Center", icon: AlertTriangle, anomaly: true },
@@ -101,7 +103,11 @@ export default function Sidebar() {
                 {item.badge && (
                   <span
                     className="text-xs font-bold px-1.5 py-0.5 rounded"
-                    style={{ background: "rgba(59,130,246,0.2)", color: "#3b82f6", fontSize: 10 }}
+                    style={
+                      item.badge === "Peppol"
+                        ? { background: "rgba(34,197,94,0.15)", color: "#22c55e", fontSize: 10 }
+                        : { background: "rgba(59,130,246,0.2)", color: "#3b82f6", fontSize: 10 }
+                    }
                   >
                     {item.badge}
                   </span>

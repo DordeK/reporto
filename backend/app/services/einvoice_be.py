@@ -17,7 +17,6 @@ def _base_url() -> str:
 def _headers() -> dict:
     return {
         "Authorization": f"Bearer {settings.EINVOICE_BE_API_KEY}",
-        "Accept": "application/json",
     }
 
 
@@ -61,3 +60,95 @@ async def get_document_ubl(document_id: str) -> str:
         )
         r.raise_for_status()
         return r.text
+
+
+def build_json_payload(data: dict) -> dict:
+    """
+    Convert our internal invoice form data to the e-invoice.be DocumentCreate schema.
+    Ref: POST /api/documents/ in docs/api-1.json
+    """
+    supplier = data.get("supplier", {})
+    customer = data.get("customer", {})
+
+    payload: dict = {
+        "document_type": "INVOICE",
+        "invoice_id": data.get("invoice_number", "INV-001"),
+        "invoice_date": data.get("issue_date", ""),
+        "currency": data.get("currency", "EUR"),
+        "vendor_name": supplier.get("name", ""),
+        "vendor_tax_id": supplier.get("vat_id") or None,
+        "customer_name": customer.get("name", ""),
+        "customer_tax_id": customer.get("vat_id") or None,
+        "vendor_peppol_id": supplier.get("endpoint_id") or None,
+        "customer_peppol_id": customer.get("endpoint_id") or None,
+        "items": [
+            {
+                "description": ln.get("description", ""),
+                "quantity": ln.get("quantity", 1),
+                "unit_price": ln.get("unit_price", 0),
+                "tax_rate": str(float(ln.get("tax_percent", 21))),
+            }
+            for ln in data.get("lines", [])
+        ],
+    }
+
+    if data.get("due_date"):
+        payload["due_date"] = data["due_date"]
+    if data.get("note"):
+        payload["note"] = data["note"]
+    if data.get("buyer_reference"):
+        payload["purchase_order"] = data["buyer_reference"]
+    if data.get("payment_terms_note"):
+        payload["payment_term"] = data["payment_terms_note"]
+    if supplier.get("iban"):
+        payload["payment_details"] = [{"iban": supplier["iban"]}]
+    if customer.get("contact_email"):
+        payload["customer_email"] = customer["contact_email"]
+    if supplier.get("contact_email"):
+        payload["vendor_email"] = supplier["contact_email"]
+
+    return payload
+
+
+async def send_outbox_invoice(data: dict) -> dict:
+    """
+    Two-step workflow per e-invoice.be API (docs/api-1.json):
+      1. POST /api/documents/  — create document (JSON, DocumentCreate schema)
+      2. POST /api/documents/{id}/send — deliver via Peppol
+
+    `data` is the raw form payload from the /invoices/send endpoint.
+    Returns the send response dict (includes 'id', 'state', etc.).
+    """
+    if not settings.EINVOICE_BE_API_KEY:
+        raise ValueError("EINVOICE_BE_API_KEY not configured")
+
+    payload = build_json_payload(data)
+
+    async with httpx.AsyncClient() as client:
+        # Step 1: create document
+        create_resp = await client.post(
+            f"{_base_url()}/api/documents/",
+            json=payload,
+            headers=_headers(),
+            timeout=30.0,
+        )
+        if not create_resp.is_success:
+            raise ValueError(
+                f"HTTP {create_resp.status_code} on POST /api/documents/: {create_resp.text}"
+            )
+        doc = create_resp.json()
+        doc_id = doc["id"]
+
+        # Step 2: send via Peppol
+        send_resp = await client.post(
+            f"{_base_url()}/api/documents/{doc_id}/send",
+            headers=_headers(),
+            timeout=30.0,
+        )
+        if not send_resp.is_success:
+            raise ValueError(
+                f"HTTP {send_resp.status_code} on POST /api/documents/{doc_id}/send: {send_resp.text}"
+            )
+        result = send_resp.json()
+        result["id"] = doc_id
+        return result
