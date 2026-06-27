@@ -79,8 +79,6 @@ def build_json_payload(data: dict) -> dict:
         "vendor_tax_id": supplier.get("vat_id") or None,
         "customer_name": customer.get("name", ""),
         "customer_tax_id": customer.get("vat_id") or None,
-        "vendor_peppol_id": supplier.get("endpoint_id") or None,
-        "customer_peppol_id": customer.get("endpoint_id") or None,
         "items": [
             {
                 "description": ln.get("description", ""),
@@ -110,39 +108,46 @@ def build_json_payload(data: dict) -> dict:
     return payload
 
 
-async def send_outbox_invoice(data: dict) -> dict:
+async def send_outbox_invoice(data: dict, ubl_xml: str) -> dict:
     """
     Two-step workflow per e-invoice.be API (docs/api-1.json):
-      1. POST /api/documents/  — create document (JSON, DocumentCreate schema)
+      1. POST /api/documents/ubl — upload UBL XML (routing derived from XML EndpointIDs)
       2. POST /api/documents/{id}/send — deliver via Peppol
 
-    `data` is the raw form payload from the /invoices/send endpoint.
+    `data` is the raw form payload; `ubl_xml` is the already-built UBL 2.1 XML string.
     Returns the send response dict (includes 'id', 'state', etc.).
     """
     if not settings.EINVOICE_BE_API_KEY:
         raise ValueError("EINVOICE_BE_API_KEY not configured")
 
-    payload = build_json_payload(data)
-
     async with httpx.AsyncClient() as client:
-        # Step 1: create document
+        # Step 1: create document via UBL upload (API extracts routing from XML)
         create_resp = await client.post(
-            f"{_base_url()}/api/documents/",
-            json=payload,
+            f"{_base_url()}/api/documents/ubl",
             headers=_headers(),
+            files={"file": ("invoice.xml", ubl_xml.encode("utf-8"), "application/xml")},
             timeout=30.0,
         )
         if not create_resp.is_success:
             raise ValueError(
-                f"HTTP {create_resp.status_code} on POST /api/documents/: {create_resp.text}"
+                f"HTTP {create_resp.status_code} on POST /api/documents/ubl: {create_resp.text}"
             )
         doc = create_resp.json()
         doc_id = doc["id"]
 
-        # Step 2: send via Peppol
+        # Step 2: send via Peppol — pass routing explicitly as query params
+        send_params: dict[str, str] = {}
+        for role, party_key in [("sender", "supplier"), ("receiver", "customer")]:
+            endpoint = data.get(party_key, {}).get("endpoint_id", "")
+            if endpoint and ":" in endpoint:
+                scheme, pid = endpoint.split(":", 1)
+                send_params[f"{role}_peppol_scheme"] = scheme
+                send_params[f"{role}_peppol_id"] = pid
+
         send_resp = await client.post(
             f"{_base_url()}/api/documents/{doc_id}/send",
             headers=_headers(),
+            params=send_params,
             timeout=30.0,
         )
         if not send_resp.is_success:

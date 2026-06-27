@@ -68,7 +68,7 @@ async def send_invoice(
 
     if send_via_peppol and settings.EINVOICE_BE_API_KEY:
         try:
-            peppol_response = await einvoice_be.send_outbox_invoice(body)
+            peppol_response = await einvoice_be.send_outbox_invoice(body, ubl_xml)
         except Exception as exc:
             peppol_error = str(exc)
 

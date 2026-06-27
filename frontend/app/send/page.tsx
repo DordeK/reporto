@@ -50,6 +50,18 @@ const sectionTitle: React.CSSProperties = {
   borderBottom: "1px solid #1e293b",
 };
 
+const EU_COUNTRIES = [
+  ["BE", "Belgium"], ["BG", "Bulgaria"], ["CZ", "Czechia"], ["DK", "Denmark"],
+  ["DE", "Germany"], ["EE", "Estonia"], ["IE", "Ireland"], ["GR", "Greece"],
+  ["ES", "Spain"], ["FR", "France"], ["HR", "Croatia"], ["IT", "Italy"],
+  ["CY", "Cyprus"], ["LV", "Latvia"], ["LT", "Lithuania"], ["LU", "Luxembourg"],
+  ["HU", "Hungary"], ["MT", "Malta"], ["NL", "Netherlands"], ["AT", "Austria"],
+  ["PL", "Poland"], ["PT", "Portugal"], ["RO", "Romania"], ["SI", "Slovenia"],
+  ["SK", "Slovakia"], ["FI", "Finland"], ["SE", "Sweden"],
+  ["GB", "United Kingdom"], ["CH", "Switzerland"], ["NO", "Norway"],
+  ["RS", "Serbia"], ["US", "United States"],
+];
+
 const EU_VAT_RATES = [0, 6, 9, 12, 21];
 const TAX_CATEGORIES = [
   { value: "S", label: "S — Standard" },
@@ -59,13 +71,13 @@ const TAX_CATEGORIES = [
   { value: "K", label: "K — Intra-EU" },
 ];
 
-const emptyParty = (): OutgoingParty => ({
+const emptyParty = (country = "BE"): OutgoingParty => ({
   name: "",
   vat_id: "",
   street_name: "",
   city_name: "",
   postal_zone: "",
-  country_code: "BE",
+  country_code: country,
   endpoint_id: "",
   iban: "",
   contact_email: "",
@@ -127,7 +139,14 @@ function PartyForm({
         <Field label="Street" value={party.street_name || ""} onChange={set("street_name")} placeholder="Rue de la Loi 16" />
         <Field label="City" value={party.city_name || ""} onChange={set("city_name")} placeholder="Brussels" />
         <Field label="Postal code" value={party.postal_zone || ""} onChange={set("postal_zone")} placeholder="1000" />
-        <Field label="Country code" value={party.country_code} onChange={set("country_code")} placeholder="BE" />
+        <div>
+          <label style={label}>Country</label>
+          <select style={{ ...input, cursor: "pointer" }} value={party.country_code} onChange={(e) => set("country_code")(e.target.value)}>
+            {EU_COUNTRIES.map(([code, name]) => (
+              <option key={code} value={code}>{code} — {name}</option>
+            ))}
+          </select>
+        </div>
         <Field
           label="Peppol endpoint ID"
           value={party.endpoint_id || ""}
@@ -332,8 +351,8 @@ export default function SendInvoicePage() {
   const [buyerRef, setBuyerRef] = useState("");
   const [sendViaPeppol, setSendViaPeppol] = useState(true);
 
-  const [supplier, setSupplier] = useState<OutgoingParty>(emptyParty());
-  const [customer, setCustomer] = useState<OutgoingParty>(emptyParty());
+  const [supplier, setSupplier] = useState<OutgoingParty>(emptyParty("SI"));
+  const [customer, setCustomer] = useState<OutgoingParty>(emptyParty("BE"));
   const [lines, setLines] = useState<OutgoingLine[]>([emptyLine()]);
 
   const [submitting, setSubmitting] = useState(false);
@@ -413,7 +432,7 @@ export default function SendInvoicePage() {
               <p style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>Peppol delivery note</p>
               <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{result.peppol_error}</p>
               <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-                The invoice was saved locally. Configure a valid EINVOICE_BE_API_KEY to enable Peppol delivery.
+                The invoice was saved locally. Check the error above and re-send with corrected details.
               </p>
             </div>
           )}
