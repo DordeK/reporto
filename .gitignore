@@ -32,3 +32,8 @@ frontend/.env.local
 *.env
 backend/.env
 frontend/.env.local
+
+.env
+*.env
+backend/.env
+frontend/.env.local
