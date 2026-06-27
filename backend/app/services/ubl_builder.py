@@ -16,6 +16,36 @@ CUSTOMIZATION_ID = "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poa
 PROFILE_ID = "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0"
 
 
+_COUNTRY_NAME_ISO: dict[str, str] = {
+    "SLOVENIA": "SI", "SLOVENIJA": "SI",
+    "BELGIUM": "BE", "BELGIE": "BE", "BELGIQUE": "BE",
+    "NETHERLANDS": "NL", "NEDERLAND": "NL", "HOLLAND": "NL",
+    "GERMANY": "DE", "DEUTSCHLAND": "DE",
+    "FRANCE": "FR", "AUSTRIA": "AT", "ITALY": "IT", "ITALIA": "IT",
+    "SPAIN": "ES", "ESPANA": "ES", "PORTUGAL": "PT",
+    "CROATIA": "HR", "HRVATSKA": "HR", "SERBIA": "RS",
+    "CZECHIA": "CZ", "CZECH REPUBLIC": "CZ",
+    "POLAND": "PL", "POLSKA": "PL",
+    "HUNGARY": "HU", "MAGYARORSZÁG": "HU",
+    "ROMANIA": "RO", "BULGARIA": "BG",
+    "DENMARK": "DK", "SVERIGE": "SE", "SWEDEN": "SE",
+    "FINLAND": "FI", "SUOMI": "FI",
+    "NORWAY": "NO", "NORGE": "NO",
+    "SWITZERLAND": "CH", "SCHWEIZ": "CH",
+    "UNITED KINGDOM": "GB", "UK": "GB", "GREAT BRITAIN": "GB",
+    "UNITED STATES": "US", "USA": "US",
+}
+
+
+def _iso_country(raw: str | None, default: str = "BE") -> str:
+    if not raw:
+        return default
+    s = raw.strip().upper()
+    if len(s) == 2:
+        return s
+    return _COUNTRY_NAME_ISO.get(s, s[:2])
+
+
 def _r2(v) -> str:
     return str(Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
@@ -37,10 +67,15 @@ def _cac(tag: str) -> etree._Element:
 def _party_element(party: dict[str, Any]) -> etree._Element:
     p = _cac("Party")
 
-    endpoint_id = party.get("endpoint_id") or party.get("vat_id")
-    if endpoint_id:
-        ep = _cbc("EndpointID", endpoint_id)
-        ep.set("schemeID", party.get("endpoint_scheme") or "0208")
+    endpoint_raw = party.get("endpoint_id") or party.get("vat_id")
+    if endpoint_raw:
+        if ":" in endpoint_raw:
+            scheme, eid = endpoint_raw.split(":", 1)
+        else:
+            scheme = party.get("endpoint_scheme") or "0208"
+            eid = endpoint_raw
+        ep = _cbc("EndpointID", eid)
+        ep.set("schemeID", scheme)
         p.append(ep)
 
     if party.get("name"):
@@ -56,7 +91,7 @@ def _party_element(party: dict[str, Any]) -> etree._Element:
     if party.get("postal_zone"):
         addr.append(_cbc("PostalZone", party["postal_zone"]))
     country = _cac("Country")
-    country.append(_cbc("IdentificationCode", party.get("country_code") or "BE"))
+    country.append(_cbc("IdentificationCode", _iso_country(party.get("country_code"))))
     addr.append(country)
     p.append(addr)
 
@@ -153,8 +188,9 @@ def build_ubl_invoice(data: dict[str, Any]) -> str:
     if data.get("note"):
         root.append(_cbc("Note", data["note"]))
     root.append(_cbc("DocumentCurrencyCode", currency))
-    if data.get("buyer_reference"):
-        root.append(_cbc("BuyerReference", data["buyer_reference"]))
+    # PEPPOL-EN16931-R003: BuyerReference or OrderReference is required
+    buyer_ref = data.get("buyer_reference") or data.get("invoice_number", "N/A")
+    root.append(_cbc("BuyerReference", buyer_ref))
 
     # ── Supplier ──────────────────────────────────────────────────────────────
     supplier_party = _cac("AccountingSupplierParty")
@@ -168,18 +204,22 @@ def build_ubl_invoice(data: dict[str, Any]) -> str:
 
     # ── Payment means ─────────────────────────────────────────────────────────
     supplier = data.get("supplier", {})
-    if supplier.get("iban") or data.get("payment_terms_note"):
+    if supplier.get("iban"):
+        # BR-61: code 30 (SEPA credit transfer) requires PayeeFinancialAccount/ID
         pm = _cac("PaymentMeans")
-        pm.append(_cbc("PaymentMeansCode", "30"))  # credit transfer
-        if supplier.get("iban"):
-            pfa = _cac("PayeeFinancialAccount")
-            pfa.append(_cbc("ID", supplier["iban"]))
-            pm.append(pfa)
+        pm.append(_cbc("PaymentMeansCode", "30"))
+        pfa = _cac("PayeeFinancialAccount")
+        pfa.append(_cbc("ID", supplier["iban"]))
+        pm.append(pfa)
         root.append(pm)
 
-    if data.get("payment_terms_note"):
+    # BR-CO-25: PayableAmount > 0 requires DueDate OR PaymentTerms/Note
+    terms_note = data.get("payment_terms_note")
+    if not data.get("due_date") and not terms_note:
+        terms_note = "Net 30"
+    if terms_note:
         pt = _cac("PaymentTerms")
-        pt.append(_cbc("Note", data["payment_terms_note"]))
+        pt.append(_cbc("Note", terms_note))
         root.append(pt)
 
     # ── Tax total ─────────────────────────────────────────────────────────────
