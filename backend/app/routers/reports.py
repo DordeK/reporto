@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.models import ReportRun
 from app.schemas.report import GenerateReportRequest, ReportDefinition
-from app.services.ai_service import explain_report, generate_report_definition
+from app.services.ai_service import dispatch_prompt, explain_report, generate_report_definition
 from app.services.report_engine import execute_report
 from app.services.report_validator import (
     validate_report_definition,
@@ -45,8 +45,78 @@ async def generate_report(
     actor = request.headers.get("X-User-Id", "anonymous") if request else "anonymous"
     ip_address = request.client.host if (request and request.client) else None
 
-    # 1. Ask AI to produce a report definition
-    raw_definition = await generate_report_definition(body.prompt)
+    # 1. Dispatch: LLM picks the right tool and extracts params
+    dispatch = await dispatch_prompt(body.prompt)
+    tool = dispatch["tool"]
+    args = dispatch["args"]
+
+    # ── Slovenian DDV (KPR + DDV-O XML) ──────────────────────────────────────
+    if tool == "generate_slovenian_ddv":
+        from app.services.slovenian_vat_return import (
+            fetch_purchase_ledger, compute_ddvo_boxes,
+            generate_kpr_xml, generate_ddvo_xml,
+        )
+        from datetime import date as _date
+        year = _date.today().year
+        ps = _date.fromisoformat(args.get("period_start", f"{year}-01-01"))
+        pe = _date.fromisoformat(args.get("period_end",   f"{year}-03-31"))
+        entries = await fetch_purchase_ledger(db, ps, pe)
+        boxes   = await compute_ddvo_boxes(db, ps, pe)
+        return {
+            "reportType":       "slovenian_ddv",
+            "reportDefinition": {"name": "Slovenian DDV Return (KPR + DDV-O)"},
+            "rows":             [],
+            "explanation": (
+                f"Generated Slovenian eDavki XML for {ps} – {pe}. "
+                f"{len(entries)} purchase entries. "
+                "Download KPR (Knjiga Prejetih Računov) and DDV-O (Periodična DDV napoved) "
+                "and upload to beta.edavki.durs.si."
+            ),
+            "xmlData": {
+                "kpr_xml":     generate_kpr_xml(entries, args.get("tax_number", "12345678"), ps, pe),
+                "ddvo_xml":    generate_ddvo_xml(
+                                   boxes, args.get("tax_number", "12345678"),
+                                   args.get("taxpayer_name", "Demo Company d.o.o."), ps, pe),
+                "boxes":       boxes,
+                "entry_count": len(entries),
+                "kpr_schema":  "http://edavki.durs.si/Documents/Schemas/KPR_3.xsd",
+                "ddvo_schema": "http://edavki.durs.si/Documents/Schemas/DDVO_4.xsd",
+            },
+            "warnings": [] if entries else ["No received invoices found for this period."],
+        }
+
+    # ── Belgian Intervat VAT return ───────────────────────────────────────────
+    if tool == "generate_belgian_vat":
+        from app.services.belgian_vat_return import calculate_vat_grids, generate_intervat_xml
+        from datetime import date as _date
+        year = _date.today().year
+        ps = _date.fromisoformat(args.get("period_start", f"{year}-01-01"))
+        pe = _date.fromisoformat(args.get("period_end",   f"{year}-03-31"))
+        grids = await calculate_vat_grids(db, ps, pe)
+        xml_content = generate_intervat_xml(
+            grids=grids,
+            declarant_vat=args.get("declarant_vat",    "BE0000000000"),
+            declarant_name=args.get("declarant_name",  "Demo Company NV"),
+            declarant_street=args.get("declarant_street", ""),
+            declarant_city=args.get("declarant_city",   ""),
+            declarant_postal=args.get("declarant_postal", ""),
+            declarant_email=args.get("declarant_email",  ""),
+            period_start=ps, period_end=pe,
+        )
+        return {
+            "reportType":       "belgian_vat",
+            "reportDefinition": {"name": "Belgian Intervat VAT Return"},
+            "rows":             [],
+            "explanation": (
+                f"Generated Belgian Intervat XML for {ps} – {pe}. "
+                "Download and upload to intervat.minfinbe."
+            ),
+            "xmlData": {"vat_xml": xml_content, "grids": grids},
+            "warnings": grids.get("warnings", []),
+        }
+
+    # ── SQL analytics report (existing pipeline) ─────────────────────────────
+    raw_definition = args
 
     # 2. Validate the definition with Pydantic
     try:
