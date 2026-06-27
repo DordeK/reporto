@@ -27,6 +27,11 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportResult | null>(null);
   const [activeTab, setActiveTab] = useState<ReportTab>("results");
+  const [drilldownRow, setDrilldownRow] = useState<{
+    runId: string;
+    groupKey: Record<string, any>;
+    groupLabel: string;
+  } | null>(null);
 
   const handleSubmit = useCallback(async (prompt: string) => {
     const userMsgId = newId();
