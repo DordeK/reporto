@@ -11,7 +11,7 @@ export default function UploadPage() {
           Import Invoices
         </h1>
         <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-          Upload XML invoices, import from email, or sync from a Peppol provider
+          Upload XML invoices or sync from your Peppol provider
         </p>
       </div>
 

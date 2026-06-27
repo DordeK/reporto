@@ -11,6 +11,7 @@ import {
   Settings,
   Zap,
   SendHorizonal,
+  Shield,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { listAnomalies } from "@/lib/api";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/invoices", label: "Invoices", icon: FileText },
   { href: "/reports", label: "Report Assistant", icon: MessageSquare, badge: "AI" },
   { href: "/anomalies", label: "Anomaly Center", icon: AlertTriangle, anomaly: true },
+  { href: "/audit", label: "Audit Log", icon: Shield },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

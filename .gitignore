@@ -17,3 +17,7 @@ node_modules/
 postgres_data/
 .DS_Store
 Thumbs.db
+node_modules/*
+frontend/node_modules/*
+frontend/.next/*
+
