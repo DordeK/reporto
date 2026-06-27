@@ -124,7 +124,7 @@
 
   /* ── Stat grid ── */
   .stat-grid {
-    display: grid; grid-template-columns: repeat(5, 1fr);
+    display: grid; grid-template-columns: repeat(6, 1fr);
     gap: 14px; margin-bottom: 28px;
   }
   .stat-card {
@@ -295,6 +295,9 @@
     .judge-grid { grid-template-columns: repeat(3, 1fr); }
     .stat-grid  { grid-template-columns: repeat(3, 1fr); }
   }
+  @media (max-width: 1300px) {
+    .stat-grid  { grid-template-columns: repeat(3, 1fr); }
+  }
   @media (max-width: 900px) {
     .slide { padding: 50px 36px 70px; }
     .stat-grid, .country-grid { grid-template-columns: 1fr 1fr; }
@@ -338,11 +341,39 @@
     </div>
 
     <!-- ══════════════════════════════════════════
-         SLIDE 2 — THE PROBLEM (stats)
+         SLIDE 2 — OUR STORY
     ══════════════════════════════════════════ -->
     <div class="slide" id="slide-1">
       <div class="slide-inner">
-        <div class="tag tag-red">The Problem</div>
+        <div class="tag tag-amber">Our Story</div>
+        <h2>Built on <span class="accent">airport floors</span></h2>
+
+        <div class="photos-grid">
+          <div class="photo-wrap">
+            <img src="pictures/WhatsApp Image 2026-06-27 at 15.18.06.jpeg" alt="Coding at airport" />
+            <div class="photo-caption">Flight cancelled. Laptops out. We kept shipping. ✈️</div>
+          </div>
+          <div class="photo-wrap">
+            <img src="pictures/WhatsApp Image 2026-06-27 at 15.18.13.jpeg" alt="Coding on the plane" />
+            <div class="photo-caption">Somewhere over the Alps — writing the VAT engine. 🏔️</div>
+          </div>
+        </div>
+
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 22px;font-size:0.88rem;color:var(--muted);line-height:1.75;text-align:center;">
+          Flew from <strong style="color:var(--text);">Slovenia</strong> this morning.
+          Flight cancelled. Missed the first half.
+          Coded on the airport floor with no WiFi.
+          Still built the whole thing.
+          <strong style="color:var(--text);">That's the spirit.</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SLIDE 3 — THE PROBLEM (stats)
+    ══════════════════════════════════════════ -->
+    <div class="slide" id="slide-2">
+      <div class="slide-inner">
         <h2>Invoicing is <span class="accent">bleeding money</span></h2>
         <p class="lead">Every EU finance team battles the same thing — manual work that should not exist.</p>
 
@@ -356,16 +387,12 @@
             <span class="stat-label">average time per year spent on VAT compliance per company</span>
           </div>
           <div class="stat-card">
-            <span class="stat-num amber">€12–30</span>
-            <span class="stat-label">cost per invoice processed manually vs. €3–8 automated</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num">1 in 10</span>
-            <span class="stat-label">invoices contain errors — duplicates, VAT mismatches, missing IDs</span>
-          </div>
-          <div class="stat-card">
             <span class="stat-num green">450K</span>
             <span class="stat-label">Belgian businesses affected by mandatory e-invoicing from 2026</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num amber">$7.8B</span>
+            <span class="stat-label">spent annually on financial reporting &amp; compliance software globally</span>
           </div>
         </div>
 
@@ -376,9 +403,9 @@
     </div>
 
     <!-- ══════════════════════════════════════════
-         SLIDE 3 — WHAT WE BUILT
+         SLIDE 4 — WHAT WE BUILT
     ══════════════════════════════════════════ -->
-    <div class="slide" id="slide-2">
+    <div class="slide" id="slide-2b">
       <div class="slide-inner">
         <div class="tag tag-blue">What We Built</div>
         <h2>One platform. <span class="accent">Zero SQL.</span></h2>
@@ -387,23 +414,15 @@
         <ul class="feature-list">
           <li>
             <span class="icon icon-blue">📥</span>
-            <span><strong>Ingest from anywhere</strong> — Upload UBL XML or pull from Peppol inbox. SHA-256 deduplication prevents duplicates on import.</span>
+            <span><strong>Ingest from anywhere</strong></span>
           </li>
           <li>
             <span class="icon icon-red">🚨</span>
-            <span><strong>10 automatic anomaly checks</strong> — VAT mismatches, duplicate IDs, missing VAT numbers, reverse-charge violations, impossible due dates. Runs on every import, zero config.</span>
+            <span><strong>10 automatic anomaly checks</strong></span>
           </li>
           <li>
             <span class="icon icon-green">💬</span>
-            <span><strong>Natural language reports</strong> — Type "Show total VAT per supplier Q1 2026" → get a reconciled chart + SQL + AI narrative. No BI tool, no analyst, no ticket to IT.</span>
-          </li>
-          <li>
-            <span class="icon icon-amber">🇧🇪</span>
-            <span><strong>Belgian Intervat VAT return</strong> — Auto-calculates all grid values and generates the XML ready for FPS Finance submission. One click.</span>
-          </li>
-          <li>
-            <span class="icon icon-indigo">🇸🇮</span>
-            <span><strong>Slovenian eDavki XML</strong> — KPR (purchase ledger) + DDV-O (VAT declaration) generated for FURS. Multi-country, same interface.</span>
+            <span><strong>Natural language reports + VAT XML</strong> — Ask in plain English, get a validated chart, AI narrative, and submission-ready Intervat / eDavki XML.</span>
           </li>
         </ul>
       </div>
@@ -417,69 +436,81 @@
         <div class="tag tag-indigo">Architecture</div>
         <h2>How it <span class="accent">works</span></h2>
 
-        <div class="arch-row">
-          <div class="arch-label">Invoice Ingestion Pipeline</div>
-          <div class="flow">
-            <div class="flow-node blue">UBL XML / Peppol</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node">SHA-256 dedup</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node">lxml parser</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node green">PostgreSQL</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node red">10 anomaly checks</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node amber">Audit log</div>
-          </div>
-        </div>
+        <svg viewBox="0 0 1000 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:260px;">
+          <defs>
+            <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
+            </marker>
+            <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+            </marker>
+            <marker id="ah-indigo" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#6366f1"/>
+            </marker>
+            <marker id="ah-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#10b981"/>
+            </marker>
+          </defs>
 
-        <div class="arch-row">
-          <div class="arch-label">AI Report Engine</div>
-          <div class="flow">
-            <div class="flow-node blue">Plain English</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node indigo">GPT-4o-mini tool calling</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node">ReportDefinition JSON</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node amber">6-step validation</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node green">Chart + Narrative + Score</div>
-          </div>
-        </div>
+          <!-- ── Column labels ── -->
+          <text x="80"  y="22" fill="#475569" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="0.5" font-family="Inter,sans-serif">INPUT</text>
+          <text x="270" y="22" fill="#475569" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="0.5" font-family="Inter,sans-serif">PARSE</text>
+          <text x="480" y="22" fill="#475569" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="0.5" font-family="Inter,sans-serif">STORAGE</text>
+          <text x="690" y="22" fill="#475569" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="0.5" font-family="Inter,sans-serif">CHECK</text>
+          <text x="900" y="22" fill="#475569" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="0.5" font-family="Inter,sans-serif">OUTPUT</text>
 
-        <div class="arch-row">
-          <div class="arch-label">VAT Reporting</div>
-          <div class="flow">
-            <div class="flow-node blue">"Generate Belgian VAT Q1"</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node indigo">Tool dispatch</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node">Compute grids</div>
-            <span class="flow-arrow">→</span>
-            <div class="flow-node green">Intervat / eDavki XML</div>
-          </div>
-        </div>
+          <!-- ══ ROW 1: Invoice ingestion ══ -->
+          <rect x="10"  y="40" width="140" height="44" rx="10" fill="rgba(59,130,246,.12)" stroke="rgba(59,130,246,.5)" stroke-width="1.2"/>
+          <text x="80"  y="67" fill="#93c5fd" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Invoice</text>
 
-        <div class="two-col" style="margin-top:8px;">
-          <div class="col-card">
-            <h4>🗄️ Backend</h4>
-            <ul class="feature-list" style="gap:8px;">
-              <li><span class="icon icon-blue" style="width:20px;height:20px;font-size:11px;">⚡</span><span>FastAPI + SQLAlchemy async</span></li>
-              <li><span class="icon icon-green" style="width:20px;height:20px;font-size:11px;">🐘</span><span>PostgreSQL with asyncpg driver</span></li>
-              <li><span class="icon icon-amber" style="width:20px;height:20px;font-size:11px;">🔒</span><span>Full audit log on every mutation</span></li>
-            </ul>
-          </div>
-          <div class="col-card">
-            <h4>🖥️ Frontend</h4>
-            <ul class="feature-list" style="gap:8px;">
-              <li><span class="icon icon-blue" style="width:20px;height:20px;font-size:11px;">⚛️</span><span>Next.js 15 App Router + TypeScript</span></li>
-              <li><span class="icon icon-indigo" style="width:20px;height:20px;font-size:11px;">📊</span><span>Recharts for interactive visualisations</span></li>
-              <li><span class="icon icon-green" style="width:20px;height:20px;font-size:11px;">💬</span><span>Chat-style natural language interface</span></li>
-            </ul>
-          </div>
-        </div>
+          <rect x="195" y="40" width="150" height="44" rx="10" fill="rgba(30,45,69,.9)" stroke="#1e2d45" stroke-width="1.2"/>
+          <text x="270" y="67" fill="#94a3b8" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Parse</text>
+
+          <rect x="405" y="40" width="150" height="44" rx="10" fill="rgba(16,185,129,.12)" stroke="rgba(16,185,129,.5)" stroke-width="1.2"/>
+          <text x="480" y="67" fill="#6ee7b7" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Database</text>
+
+          <rect x="615" y="40" width="150" height="44" rx="10" fill="rgba(239,68,68,.12)" stroke="rgba(239,68,68,.5)" stroke-width="1.2"/>
+          <text x="690" y="67" fill="#fca5a5" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Anomaly checks</text>
+
+          <rect x="825" y="40" width="150" height="44" rx="10" fill="rgba(245,158,11,.12)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
+          <text x="900" y="67" fill="#fcd34d" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Audit log</text>
+
+          <!-- Row 1 arrows -->
+          <line x1="150" y1="62" x2="193" y2="62" stroke="#475569" stroke-width="1.5" marker-end="url(#ah)"/>
+          <line x1="345" y1="62" x2="403" y2="62" stroke="#475569" stroke-width="1.5" marker-end="url(#ah)"/>
+          <line x1="555" y1="62" x2="613" y2="62" stroke="#475569" stroke-width="1.5" marker-end="url(#ah)"/>
+          <line x1="765" y1="62" x2="823" y2="62" stroke="#475569" stroke-width="1.5" marker-end="url(#ah)"/>
+
+          <!-- ══ ROW 2: NL report ══ -->
+          <rect x="10"  y="170" width="140" height="44" rx="10" fill="rgba(59,130,246,.12)" stroke="rgba(59,130,246,.5)" stroke-width="1.2"/>
+          <text x="80"  y="197" fill="#93c5fd" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Natural language</text>
+
+          <rect x="195" y="170" width="150" height="44" rx="10" fill="rgba(99,102,241,.12)" stroke="rgba(99,102,241,.5)" stroke-width="1.2"/>
+          <text x="270" y="197" fill="#c4b5fd" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">AI</text>
+
+          <rect x="405" y="170" width="150" height="44" rx="10" fill="rgba(30,45,69,.9)" stroke="#1e2d45" stroke-width="1.2"/>
+          <text x="480" y="197" fill="#f1f5f9" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Validate</text>
+
+          <rect x="615" y="170" width="150" height="44" rx="10" fill="rgba(245,158,11,.12)" stroke="rgba(245,158,11,.4)" stroke-width="1.2"/>
+          <text x="690" y="197" fill="#fcd34d" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Quality check</text>
+
+          <rect x="825" y="170" width="150" height="44" rx="10" fill="rgba(16,185,129,.12)" stroke="rgba(16,185,129,.5)" stroke-width="1.2"/>
+          <text x="900" y="189" fill="#6ee7b7" font-size="11" font-weight="700" text-anchor="middle" font-family="Inter,sans-serif">Report / Chart</text>
+          <text x="900" y="205" fill="#34d399" font-size="10" text-anchor="middle" font-family="Inter,sans-serif">/ VAT XML</text>
+
+          <!-- Row 2 arrows -->
+          <line x1="150" y1="192" x2="193" y2="192" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ah-indigo)"/>
+          <line x1="345" y1="192" x2="403" y2="192" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ah-indigo)"/>
+          <line x1="555" y1="192" x2="613" y2="192" stroke="#6366f1" stroke-width="1.5" marker-end="url(#ah-indigo)"/>
+          <line x1="765" y1="192" x2="823" y2="192" stroke="#10b981" stroke-width="1.5" marker-end="url(#ah-green)"/>
+
+          <!-- DB feeds AI -->
+          <path d="M480 84 Q480 130 270 168" fill="none" stroke="#475569" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#ah)"/>
+
+          <!-- Row labels on the left -->
+          <text x="5" y="100" fill="#3b82f6" font-size="9" font-weight="700" font-family="Inter,sans-serif" transform="rotate(-90,5,100)" text-anchor="middle">INGEST</text>
+          <text x="5" y="220" fill="#6366f1" font-size="9" font-weight="700" font-family="Inter,sans-serif" transform="rotate(-90,5,220)" text-anchor="middle">REPORT</text>
+        </svg>
       </div>
     </div>
 
@@ -586,18 +617,11 @@
               <div class="pipe-num">1</div>
               <div>
                 <div class="pipe-title">Tool calling dispatch</div>
-                <div class="pipe-desc">GPT-4o-mini picks a tool: <code style="color:var(--blue);font-size:.78rem;">generate_sql_report</code>, <code style="color:var(--amber);font-size:.78rem;">generate_belgian_vat</code>, or <code style="color:var(--indigo);font-size:.78rem;">generate_slovenian_ddv</code>. Never raw SQL.</div>
+                <div class="pipe-desc">AI picks the right tool and dispatches it automatically.</div>
               </div>
             </div>
             <div class="pipe-step">
               <div class="pipe-num">2</div>
-              <div>
-                <div class="pipe-title">Field allowlist (Pydantic)</div>
-                <div class="pipe-desc">Every field name checked against <code style="color:var(--blue);font-size:.78rem;">ALLOWED_FIELDS</code>. Unknown field → rejected instantly.</div>
-              </div>
-            </div>
-            <div class="pipe-step">
-              <div class="pipe-num">3</div>
               <div>
                 <div class="pipe-title">Parameterised SQL only</div>
                 <div class="pipe-desc">SQLAlchemy named params. Zero raw string interpolation. No injection surface.</div>
@@ -606,21 +630,21 @@
           </div>
           <div class="pipeline">
             <div class="pipe-step">
-              <div class="pipe-num">4</div>
+              <div class="pipe-num">3</div>
               <div>
                 <div class="pipe-title">EXPLAIN before execute</div>
                 <div class="pipe-desc">PostgreSQL <code style="color:var(--blue);font-size:.78rem;">EXPLAIN</code> check before query runs. Bad plans fail fast.</div>
               </div>
             </div>
             <div class="pipe-step">
-              <div class="pipe-num">5</div>
+              <div class="pipe-num">4</div>
               <div>
                 <div class="pipe-title">Dataset completeness check</div>
                 <div class="pipe-desc">Result verified against known invoice totals. Missing data flagged, not silently ignored.</div>
               </div>
             </div>
             <div class="pipe-step">
-              <div class="pipe-num">6</div>
+              <div class="pipe-num">5</div>
               <div>
                 <div class="pipe-title">Data quality score 0–100</div>
                 <div class="pipe-desc">Reconciliation + anomaly impact analysis. Score and warnings returned to the user.</div>
@@ -653,7 +677,6 @@
             <ul>
               <li>Grids 01–91 (Annex)</li>
               <li>Input VAT recovery</li>
-              <li>Intra-EU supply split</li>
               <li>Submission-ready XML</li>
             </ul>
           </div>
@@ -664,7 +687,6 @@
             <ul>
               <li>KPR: purchase ledger per invoice</li>
               <li>DDV-O: boxes 41–60</li>
-              <li>Rate mapping 21→22%, 6/12→9.5%</li>
               <li>Namespace-correct XML schemas</li>
             </ul>
           </div>
@@ -675,45 +697,13 @@
             <ul>
               <li>Same architecture</li>
               <li>1 service file to add</li>
-              <li>1 tool definition</li>
               <li>Works from day one</li>
             </ul>
           </div>
         </div>
 
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:0.84rem;color:var(--muted);line-height:1.7;">
-          <strong style="color:var(--text);">How it works:</strong> the user types <em>"Generate Belgian VAT return for Q1 2026"</em>. GPT-4o-mini calls
-          <code style="color:var(--amber);">generate_belgian_vat</code> via tool calling. The router dispatches to the correct service.
-          The XML is returned in the chat alongside the explanation. <strong style="color:var(--text);">No keyword matching, no hardcoded routing.</strong>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════
-         SLIDE 8 — OUR STORY
-    ══════════════════════════════════════════ -->
-    <div class="slide" id="slide-7">
-      <div class="slide-inner">
-        <div class="tag tag-amber">Our Story</div>
-        <h2>Built on <span class="accent">airport floors</span></h2>
-
-        <div class="photos-grid">
-          <div class="photo-wrap">
-            <img src="pictures/WhatsApp Image 2026-06-27 at 15.18.06.jpeg" alt="Coding at airport" />
-            <div class="photo-caption">Flight cancelled. Laptops out. We kept shipping. ✈️</div>
-          </div>
-          <div class="photo-wrap">
-            <img src="pictures/WhatsApp Image 2026-06-27 at 15.18.13.jpeg" alt="Coding on the plane" />
-            <div class="photo-caption">Somewhere over the Alps — writing the VAT engine. 🏔️</div>
-          </div>
-        </div>
-
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 22px;font-size:0.88rem;color:var(--muted);line-height:1.75;text-align:center;">
-          Flew from <strong style="color:var(--text);">Slovenia</strong> this morning.
-          Flight cancelled. Missed the first half.
-          Coded on the airport floor with no WiFi.
-          Still built the whole thing.
-          <strong style="color:var(--text);">That's the spirit.</strong>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;font-size:0.84rem;color:var(--muted);line-height:1.6;">
+          Type <em>"Generate Belgian VAT return for Q1 2026"</em> → GPT-4o-mini calls <code style="color:var(--amber);">generate_belgian_vat</code> → submission-ready XML in the chat. <strong style="color:var(--text);">No keyword matching, no hardcoded routing.</strong>
         </div>
       </div>
     </div>
@@ -732,36 +722,31 @@
             <div class="j-logo">🏛️</div>
             <h4>FPS Finance</h4>
             <div class="j-role">Regulator &amp; Tax Authority</div>
-            <p>Reporto auto-generates valid Intervat XML — reducing submission errors and fraud at the source.</p>
-            <div class="j-why">Less audit burden. Cleaner data in the system from day one.</div>
+            <div class="j-why">Auto-generates valid Intervat XML — less audit burden, cleaner data.</div>
           </div>
           <div class="judge-card">
             <div class="j-logo">🔗</div>
             <h4>e-invoice.be</h4>
             <div class="j-role">Peppol Access Point</div>
-            <p>We use the e-invoice.be API to send outgoing Peppol invoices. Native BIS 3.0 + UBL 2.1 compliance.</p>
-            <div class="j-why">Reporto is a ready-made Peppol front-end for SMEs.</div>
+            <div class="j-why">Native BIS 3.0 + UBL 2.1 — a ready-made Peppol front-end for SMEs.</div>
           </div>
           <div class="judge-card">
             <div class="j-logo">📋</div>
             <h4>Certibox</h4>
             <div class="j-role">Digital Document Compliance</div>
-            <p>Our 6-step validation pipeline and audit log align perfectly with document integrity requirements.</p>
-            <div class="j-why">Every invoice action is timestamped and immutable.</div>
+            <div class="j-why">6-step validation + immutable audit log on every invoice action.</div>
           </div>
           <div class="judge-card">
             <div class="j-logo">🏦</div>
             <h4>Unifiedpost</h4>
             <div class="j-role">e-Invoicing &amp; FinServ</div>
-            <p>Natural language report engine surfaces the financial insights that matter — no BI team needed.</p>
-            <div class="j-why">Instant cash-flow and supplier analytics for SMEs.</div>
+            <div class="j-why">Natural language analytics — instant cash-flow insights, no BI team.</div>
           </div>
           <div class="judge-card">
             <div class="j-logo">☁️</div>
             <h4>Cegeka</h4>
             <div class="j-role">IT Services &amp; Cloud</div>
-            <p>Async FastAPI + PostgreSQL + Docker Compose. Production-ready, cloud-native from day one.</p>
-            <div class="j-why">Deploy anywhere. Scale to millions of invoices.</div>
+            <div class="j-why">FastAPI + PostgreSQL + Docker Compose — cloud-native, scales to millions of invoices.</div>
           </div>
         </div>
       </div>
