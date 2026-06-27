@@ -3,11 +3,8 @@
 import { useEffect, useState } from "react";
 import {
   FileText,
-  ArrowDownCircle,
-  ArrowUpCircle,
   Receipt,
   AlertTriangle,
-  Upload,
   MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
@@ -61,29 +58,13 @@ export default function DashboardPage() {
       )}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <StatsCard
           title="Total Invoices"
           value={stats?.totalInvoices ?? 0}
           icon={FileText}
           color="#3b82f6"
           subtitle="All time"
-          loading={loading}
-        />
-        <StatsCard
-          title="Received"
-          value={stats?.receivedInvoices ?? 0}
-          icon={ArrowDownCircle}
-          color="#22c55e"
-          subtitle="Inbound invoices"
-          loading={loading}
-        />
-        <StatsCard
-          title="Sent"
-          value={stats?.sentInvoices ?? 0}
-          icon={ArrowUpCircle}
-          color="#a855f7"
-          subtitle="Outbound invoices"
           loading={loading}
         />
         <StatsCard
@@ -121,31 +102,6 @@ export default function DashboardPage() {
           <h3 className="text-sm font-semibold px-1" style={{ color: "#94a3b8" }}>
             Quick Actions
           </h3>
-          <Link
-            href="/upload"
-            className="flex items-center gap-3 rounded-xl px-4 py-4 transition-all duration-150 hover:translate-y-[-1px]"
-            style={{
-              background: "rgba(59,130,246,0.1)",
-              border: "1px solid rgba(59,130,246,0.3)",
-              textDecoration: "none",
-            }}
-          >
-            <div
-              className="flex items-center justify-center rounded-lg"
-              style={{ width: 38, height: 38, background: "rgba(59,130,246,0.2)" }}
-            >
-              <Upload size={18} color="#3b82f6" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "#f1f5f9" }}>
-                Import Invoices
-              </p>
-              <p className="text-xs" style={{ color: "#64748b" }}>
-                Upload XML files
-              </p>
-            </div>
-          </Link>
-
           <Link
             href="/reports"
             className="flex items-center gap-3 rounded-xl px-4 py-4 transition-all duration-150 hover:translate-y-[-1px]"

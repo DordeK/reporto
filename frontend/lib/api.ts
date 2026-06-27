@@ -272,6 +272,20 @@ export async function listReports(): Promise<ReportRun[]> {
   return apiFetch<ReportRun[]>("/reports");
 }
 
+export interface ReportRunDetail {
+  id: string;
+  user_prompt: string;
+  report_definition: Record<string, unknown>;
+  generated_sql: string | null;
+  result: { rows: Record<string, unknown>[]; row_count: number } | null;
+  explanation: string | null;
+  created_at: string;
+}
+
+export async function getReportRun(id: string): Promise<ReportRunDetail> {
+  return apiFetch<ReportRunDetail>(`/reports/${id}`);
+}
+
 export interface SlovenianVatResult {
   period_start: string;
   period_end: string;
