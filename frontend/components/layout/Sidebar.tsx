@@ -56,7 +56,7 @@ export default function Sidebar() {
           <Zap size={18} color="#fff" fill="#fff" />
         </div>
         <span className="font-bold text-lg" style={{ color: "#f1f5f9", letterSpacing: "-0.02em" }}>
-          InvoiceAI
+          Reporto
         </span>
       </div>
 

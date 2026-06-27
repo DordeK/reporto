@@ -3,7 +3,7 @@ import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 
 export const metadata: Metadata = {
-  title: "InvoiceAI — E-Invoicing Compliance",
+  title: "Reporto — E-Invoicing Compliance",
   description: "AI-powered e-invoicing compliance dashboard",
 };
 
