@@ -15,15 +15,15 @@ import {
 } from "recharts";
 
 interface VatByRate {
-  rate: number;
-  taxable_amount: number;
-  vat_amount: number;
+  tax_percent: number;
+  tax_amount: number;
 }
 
 interface BySource {
-  upload: number;
-  email: number;
-  provider: number;
+  upload?: number;
+  email?: number;
+  provider?: number;
+  peppol?: number;
 }
 
 const COLORS = ["#3b82f6", "#22c55e", "#a855f7", "#f59e0b", "#ef4444"];
@@ -50,9 +50,9 @@ export function VatBarChart({ vatByRate, loading }: VatChartProps) {
   }
 
   const data = vatByRate.map((r) => ({
-    name: `${r.rate}%`,
-    "VAT Amount": r.vat_amount,
-    "Taxable Amount": r.taxable_amount,
+    name: `${r.tax_percent}%`,
+    "VAT Amount": r.tax_amount,
+    "Taxable Amount": r.tax_amount,
   }));
 
   return (
@@ -110,9 +110,9 @@ export function SourcePieChart({ bySource, loading }: SourceChartProps) {
   }
 
   const data = [
-    { name: "Upload", value: bySource.upload },
-    { name: "Email", value: bySource.email },
-    { name: "Provider", value: bySource.provider },
+    { name: "Upload", value: bySource.upload ?? 0 },
+    { name: "Email", value: bySource.email ?? 0 },
+    { name: "Provider", value: (bySource.provider ?? 0) + (bySource.peppol ?? 0) },
   ].filter((d) => d.value > 0);
 
   return (

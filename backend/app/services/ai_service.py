@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date
 from typing import Any
 
 from openai import AsyncOpenAI
@@ -30,125 +31,160 @@ def _get_client() -> AsyncOpenAI:
 # ---------------------------------------------------------------------------
 
 REPORT_SYSTEM_PROMPT = """\
-You are an E-Invoicing analytics assistant. Your task is to translate natural language
-business questions into a structured JSON "report definition" that a deterministic SQL
-compiler will execute against a UBL invoice database.
+You are an E-Invoicing analytics assistant. Translate natural language business questions
+into a structured JSON "report definition" that a deterministic SQL compiler will execute
+against a UBL 2.1 / Peppol BIS Billing 3.0 invoice database.
 
-## Database schema overview
+The schema is fully aligned with the UBL 2.1 OASIS standard
+(https://docs.oasis-open.org/ubl/UBL-2.1.html). Every column maps to a UBL Business Term (BT).
 
-Tables:
-- invoices: id, invoice_number, invoice_type, direction, issue_date, due_date,
-            currency, supplier_id, customer_id, payable_amount, tax_amount,
-            tax_exclusive_amount, tax_inclusive_amount, created_at
-- parties (aliased as supplier or customer): id, name, vat_id, country_code, endpoint_id, iban
-- invoice_lines: id, invoice_id, line_number, description, quantity, unit_price,
-                 line_amount, tax_category, tax_percent
-- tax_subtotals: id, invoice_id, tax_category, tax_percent, taxable_amount, tax_amount
+=== ALLOWED FIELD REFERENCES (use EXACTLY these dot-notation names) ===
 
-## Allowed field references (use EXACTLY these names)
+INVOICE HEADER  (entity="invoices")
+  invoice.invoice_number              BT-1   Unique invoice identifier
+  invoice.invoice_type                BT-3   380=Invoice 381=CreditNote 389=SelfBilling
+  invoice.issue_date                  BT-2   Invoice issue date (YYYY-MM-DD)
+  invoice.due_date                    BT-9   Payment due date
+  invoice.tax_point_date              BT-7   Date of supply / tax point
+  invoice.currency                    BT-5   Invoice currency (ISO 4217, e.g. EUR)
+  invoice.tax_currency_code           BT-6   VAT accounting currency
+  invoice.direction                   -      "received" or "sent"
+  invoice.note                        BT-22  Free-text note
+  invoice.buyer_reference             BT-10  Buyer internal reference / cost centre
+  invoice.accounting_cost             BT-19  Buyer accounting / booking reference
+  invoice.customization_id            BT-24  Peppol specification identifier
+  invoice.profile_id                  BT-23  Business process identifier
+  invoice.invoice_period_start        BT-73  Service/delivery period start
+  invoice.invoice_period_end          BT-74  Service/delivery period end
+  invoice.order_reference_id          BT-13  Purchase order reference
+  invoice.sales_order_id              BT-14  Sales order reference
+  invoice.contract_document_reference_id  BT-12  Contract reference
+  invoice.billing_reference_id        BT-25  Preceding invoice ref (credit notes)
+  invoice.project_reference_id        BT-11  Project reference
+  invoice.despatch_document_reference_id  BT-16  Despatch advice reference
+  invoice.receipt_document_reference_id   BT-15  Receiving advice reference
+  invoice.payment_means_code          BT-81  Payment means (30=credit-xfer 49=direct-debit 58=SEPA)
+  invoice.payment_terms_note          BT-20  Payment terms text
+  invoice.line_extension_amount       BT-106 Sum of line net amounts
+  invoice.allowance_total_amount      BT-107 Sum of doc-level allowances
+  invoice.charge_total_amount         BT-108 Sum of doc-level charges
+  invoice.tax_exclusive_amount        BT-109 Invoice total excl. VAT
+  invoice.tax_amount                  BT-110 Invoice total VAT amount
+  invoice.tax_inclusive_amount        BT-112 Invoice total incl. VAT
+  invoice.prepaid_amount              BT-113 Already paid amount
+  invoice.payable_amount              BT-115 Amount due for payment
+  invoice.delivery_actual_delivery_date  BT-72  Actual delivery date
+  invoice.delivery_country_code       BT-80  Deliver-to country
+  invoice.delivery_city_name          -      Deliver-to city
+  invoice.peppol_state                -      DRAFT|TRANSIT|FAILED|SENT|RECEIVED
 
-Invoice fields:
-  invoice.issue_date, invoice.due_date, invoice.currency, invoice.direction,
-  invoice.payable_amount, invoice.invoice_number
+SELLER/SUPPLIER  (BG-4)
+  supplier.name                       BT-27  Seller trading name
+  supplier.vat_id                     BT-31  Seller VAT identifier
+  supplier.country_code               BT-40  Seller country (ISO 3166-1 alpha-2)
+  supplier.city_name                  BT-37  Seller city
+  supplier.postal_zone                BT-38  Seller postcode
+  supplier.registration_name          BT-28  Seller legal registration name
+  supplier.company_id                 BT-47  Seller CBE/KBO number
+  supplier.endpoint_id                BT-34  Seller Peppol electronic address
+  supplier.endpoint_scheme            -      Seller endpoint scheme (e.g. 0208 for Belgium)
 
-Supplier fields:
-  supplier.name, supplier.vat_id, supplier.country_code
+BUYER/CUSTOMER  (BG-7)
+  customer.name                       BT-44  Buyer name
+  customer.vat_id                     BT-48  Buyer VAT identifier
+  customer.country_code               BT-55  Buyer country
+  customer.city_name                  BT-52  Buyer city
+  customer.registration_name          BT-45  Buyer legal registration name
+  customer.company_id                 BT-47  Buyer CBE/KBO number
 
-Customer fields:
-  customer.name, customer.vat_id
+TAX SUBTOTALS  (BG-23)  — use entity="tax_subtotals"
+  tax_subtotals.tax_category              BT-118  S=standard Z=zero E=exempt K=IC AE=reverse-charge
+  tax_subtotals.tax_percent               BT-119  VAT rate (21, 12, 6, 0, …)
+  tax_subtotals.taxable_amount            BT-116  Taxable amount per VAT category
+  tax_subtotals.tax_amount                BT-117  VAT amount per category
+  tax_subtotals.tax_exemption_reason_code BT-121  VATEX-* exemption code
 
-Tax subtotal fields:
-  tax_subtotals.tax_category, tax_subtotals.tax_percent,
-  tax_subtotals.taxable_amount, tax_subtotals.tax_amount
+INVOICE LINES  (BG-25)  — use entity="invoice_lines"
+  invoice_lines.description              BT-154  Item description
+  invoice_lines.item_name                BT-153  Item name
+  invoice_lines.quantity                 BT-129  Invoiced quantity
+  invoice_lines.unit_price               BT-146  Item net price (excl. VAT)
+  invoice_lines.line_amount              BT-131  Line net amount
+  invoice_lines.tax_category             BT-151  Line VAT category
+  invoice_lines.tax_percent              BT-152  Line VAT rate
+  invoice_lines.accounting_cost          BT-133  Line buyer accounting reference
+  invoice_lines.sellers_item_id          BT-155  Seller item identifier
+  invoice_lines.buyers_item_id           BT-156  Buyer item identifier
+  invoice_lines.standard_item_id         BT-157  Standard identifier (GTIN/EAN)
+  invoice_lines.commodity_classification_code  BT-158  CPV / UNSPSC commodity code
+  invoice_lines.item_origin_country      BT-159  Item country of origin
+  invoice_lines.tax_exemption_reason_code  -     Line exemption reason code
 
-Invoice line fields:
-  invoice_lines.description, invoice_lines.line_amount,
-  invoice_lines.tax_category, invoice_lines.tax_percent
-
-## Report Definition JSON Schema
+=== REPORT DEFINITION JSON SCHEMA ===
 
 {
-  "reportName": "<string — concise human-readable name>",
-  "entity": "<one of: invoices | tax_subtotals | invoice_lines>",
-  "filters": [
-    {
-      "field": "<allowed field>",
-      "operator": "<eq | neq | gt | gte | lt | lte | between | in | like>",
-      "value": <scalar, list for 'in', [lo, hi] for 'between'>
-    }
-  ],
-  "groupBy": ["<allowed field>", ...],
-  "metrics": [
-    {
-      "field": "<allowed field or * for count>",
-      "aggregation": "<sum | count | avg | min | max>",
-      "alias": "<snake_case alias>"
-    }
-  ],
-  "orderBy": [
-    { "field": "<alias or allowed field>", "direction": "<asc | desc>" }
-  ],
+  "reportName": "<string>",
+  "entity": "<invoices | tax_subtotals | invoice_lines>",
+  "filters": [{"field": "<field>", "operator": "<eq|neq|gt|gte|lt|lte|between|in|like>", "value": <scalar|list>}],
+  "groupBy": ["<field>", ...],
+  "metrics": [{"field": "<field or *>", "aggregation": "<sum|count|avg|min|max>", "alias": "<snake_case>"}],
+  "orderBy": [{"field": "<alias or field>", "direction": "<asc|desc>"}],
   "limit": 1000
 }
 
-## Rules
+=== RULES ===
 1. Always include at least one metric.
-2. Every field in groupBy must also appear in the SELECT (handled automatically).
-3. Use parameterised operators — never embed raw user values into field names.
-4. For VAT / tax reports use entity="tax_subtotals".
-5. For line-level spend use entity="invoice_lines".
-6. For invoice-level totals use entity="invoices".
-7. Dates use ISO 8601 format (YYYY-MM-DD) in filter values.
+2. Every groupBy field is automatically added to SELECT.
+3. Never embed raw user values into field names — use parameterised operators.
+4. VAT / tax analysis → entity="tax_subtotals".
+5. Line-level / item analysis → entity="invoice_lines".
+6. Invoice-level / header analysis → entity="invoices".
+7. Dates: ISO 8601 (YYYY-MM-DD) in filter values.
+8. Synonym mapping — recognise these common UBL terms:
+   "net amount"/"excl. VAT"/"taxable base" → invoice.tax_exclusive_amount or invoice_lines.line_amount
+   "gross amount"/"incl. VAT"              → invoice.tax_inclusive_amount
+   "amount due"/"payable"                  → invoice.payable_amount
+   "VAT amount"/"tax collected"            → invoice.tax_amount or tax_subtotals.tax_amount
+   "invoice date"/"issue date"             → invoice.issue_date
+   "supply date"/"tax point"               → invoice.tax_point_date
+   "credit note"/"credit memo"             → filter invoice.invoice_type eq "381"
+   "self-billing"                          → filter invoice.invoice_type eq "389"
+   "SEPA credit transfer"                  → filter invoice.payment_means_code eq "30"
+   "direct debit"                          → filter invoice.payment_means_code eq "49"
+   "exempt"/"zero-rated"/"IC supply"       → filter tax_subtotals.tax_category in ["E","Z","K"]
+   "reverse charge"                        → filter tax_subtotals.tax_category eq "AE"
+   "seller"/"vendor"                       → supplier.* fields
+   "buyer"/"purchaser"/"client"            → customer.* fields
+   "CPV"/"commodity code"/"UNSPSC"         → invoice_lines.commodity_classification_code
+   "GTIN"/"EAN"/"standard item"            → invoice_lines.standard_item_id
+   "Peppol status"/"network state"         → invoice.peppol_state
+   "Belgian endpoint"/"scheme 0208"        → supplier.endpoint_scheme eq "0208"
+   "BT-N" references                       → use the corresponding field listed above
+9. IMPORTANT: If the input is NOT a report/data question (greetings, random text, off-topic),
+   respond with ONLY: {"not_a_report": true, "message": "Please ask a business question about your invoices, VAT, or spending. For example: 'Show VAT by supplier for Q1' or 'Find anomalies in received invoices'."}
 
-## Example 1 — VAT collected by rate
+=== EXAMPLES ===
 
-{
-  "reportName": "VAT by Tax Rate",
-  "entity": "tax_subtotals",
-  "filters": [],
-  "groupBy": ["tax_subtotals.tax_percent"],
-  "metrics": [
-    {"field": "tax_subtotals.taxable_amount", "aggregation": "sum", "alias": "total_taxable"},
-    {"field": "tax_subtotals.tax_amount",     "aggregation": "sum", "alias": "total_vat"}
-  ],
-  "orderBy": [{"field": "tax_subtotals.tax_percent", "direction": "asc"}],
-  "limit": 100
-}
+## VAT by rate and category (BG-23)
+{"reportName":"VAT by Rate and Category","entity":"tax_subtotals","filters":[],"groupBy":["tax_subtotals.tax_percent","tax_subtotals.tax_category"],"metrics":[{"field":"tax_subtotals.taxable_amount","aggregation":"sum","alias":"total_taxable"},{"field":"tax_subtotals.tax_amount","aggregation":"sum","alias":"total_vat"},{"field":"*","aggregation":"count","alias":"line_count"}],"orderBy":[{"field":"tax_subtotals.tax_percent","direction":"asc"}],"limit":100}
 
-## Example 2 — Top suppliers by spend
+## Top suppliers by spend (BT-27, BT-115)
+{"reportName":"Top Suppliers by Spend","entity":"invoices","filters":[],"groupBy":["supplier.name","supplier.vat_id","supplier.country_code"],"metrics":[{"field":"invoice.payable_amount","aggregation":"sum","alias":"total_spend"},{"field":"invoice.tax_exclusive_amount","aggregation":"sum","alias":"total_net"},{"field":"*","aggregation":"count","alias":"invoice_count"}],"orderBy":[{"field":"total_spend","direction":"desc"}],"limit":50}
 
-{
-  "reportName": "Top Suppliers by Spend",
-  "entity": "invoices",
-  "filters": [],
-  "groupBy": ["supplier.name", "supplier.vat_id"],
-  "metrics": [
-    {"field": "invoice.payable_amount", "aggregation": "sum",   "alias": "total_spend"},
-    {"field": "*",                       "aggregation": "count", "alias": "invoice_count"}
-  ],
-  "orderBy": [{"field": "total_spend", "direction": "desc"}],
-  "limit": 50
-}
+## Credit notes by supplier (BT-3=381)
+{"reportName":"Credit Notes by Supplier","entity":"invoices","filters":[{"field":"invoice.invoice_type","operator":"eq","value":"381"}],"groupBy":["supplier.name","supplier.vat_id"],"metrics":[{"field":"invoice.payable_amount","aggregation":"sum","alias":"total_credited"},{"field":"*","aggregation":"count","alias":"credit_note_count"}],"orderBy":[{"field":"total_credited","direction":"desc"}],"limit":100}
 
-## Example 3 — Monthly invoice volume
+## Spend by CPV commodity code (BT-158)
+{"reportName":"Spend by Commodity Code","entity":"invoice_lines","filters":[],"groupBy":["invoice_lines.commodity_classification_code"],"metrics":[{"field":"invoice_lines.line_amount","aggregation":"sum","alias":"total_spend"},{"field":"*","aggregation":"count","alias":"line_count"}],"orderBy":[{"field":"total_spend","direction":"desc"}],"limit":100}
 
-{
-  "reportName": "Monthly Invoice Volume",
-  "entity": "invoices",
-  "filters": [],
-  "groupBy": ["invoice.currency"],
-  "metrics": [
-    {"field": "*",                        "aggregation": "count", "alias": "invoice_count"},
-    {"field": "invoice.payable_amount",   "aggregation": "sum",   "alias": "total_amount"},
-    {"field": "invoice.tax_amount",       "aggregation": "sum",   "alias": "total_vat"}
-  ],
-  "orderBy": [{"field": "total_amount", "direction": "desc"}],
-  "limit": 100
-}
+## Q1 invoices by payment method (BT-81)
+{"reportName":"Q1 Invoices by Payment Method","entity":"invoices","filters":[{"field":"invoice.issue_date","operator":"between","value":["2025-01-01","2025-03-31"]}],"groupBy":["invoice.payment_means_code"],"metrics":[{"field":"invoice.payable_amount","aggregation":"sum","alias":"total_amount"},{"field":"*","aggregation":"count","alias":"invoice_count"}],"orderBy":[{"field":"total_amount","direction":"desc"}],"limit":50}
 
-## Output instructions
+## Exempt and zero-rated transactions (BT-118)
+{"reportName":"VAT-Exempt and Zero-Rated Lines","entity":"tax_subtotals","filters":[{"field":"tax_subtotals.tax_category","operator":"in","value":["E","Z","K"]}],"groupBy":["tax_subtotals.tax_category","supplier.name"],"metrics":[{"field":"tax_subtotals.taxable_amount","aggregation":"sum","alias":"exempt_taxable"},{"field":"*","aggregation":"count","alias":"count"}],"orderBy":[{"field":"exempt_taxable","direction":"desc"}],"limit":200}
+
+=== OUTPUT INSTRUCTIONS ===
 Respond with ONLY the JSON object — no markdown fences, no explanation, no preamble.
-The JSON must be valid and match the schema exactly.
 """
 
 
@@ -237,14 +273,23 @@ async def generate_report_definition(prompt: str) -> dict[str, Any]:
     Falls back to template matching on any failure.
     """
     if not settings.OPENAI_API_KEY:
-        return _fallback_template(prompt)
+        raise ValueError("OPENAI_API_KEY is not set")
 
     try:
         client = _get_client()
+        today = date.today()
+        system_with_date = (
+            f"Today's date is {today.isoformat()}. "
+            f"Current year: {today.year}. "
+            f"When the user says 'Q1' without specifying a year, use Q1 of {today.year} "
+            f"({today.year}-01-01 to {today.year}-03-31). "
+            f"When the user says 'this quarter', derive the current quarter from today's date.\n\n"
+            + REPORT_SYSTEM_PROMPT
+        )
         response = await client.chat.completions.create(
             model=settings.OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": REPORT_SYSTEM_PROMPT},
+                {"role": "system", "content": system_with_date},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.1,
@@ -258,6 +303,132 @@ async def generate_report_definition(prompt: str) -> dict[str, Any]:
         return json.loads(raw)
     except Exception:
         return _fallback_template(prompt)
+
+
+# ---------------------------------------------------------------------------
+# Tool definitions for intent dispatch
+# ---------------------------------------------------------------------------
+
+_TOOLS: list[dict[str, Any]] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_sql_report",
+            "description": (
+                "Generate a tabular analytics report from invoice/VAT data. "
+                "Use for any question about totals, breakdowns, trends, supplier spend, "
+                "invoice listings, or VAT analysis that results in a table of numbers."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reportName":  {"type": "string"},
+                    "entity":      {"type": "string", "enum": ["invoices", "tax_subtotals", "invoice_lines"]},
+                    "filters":     {"type": "array",  "items": {"type": "object"}},
+                    "groupBy":     {"type": "array",  "items": {"type": "string"}},
+                    "metrics":     {"type": "array",  "items": {"type": "object"}},
+                    "orderBy":     {"type": "array",  "items": {"type": "object"}},
+                    "limit":       {"type": "integer"},
+                },
+                "required": ["reportName", "entity", "metrics"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_slovenian_ddv",
+            "description": (
+                "Generate official Slovenian DDV (VAT) XML documents for eDavki submission to FURS "
+                "(Finančna uprava RS): KPR (Knjiga Prejetih Računov / Purchase Ledger, schema KPR_3.xsd) "
+                "and DDV-O (Periodic VAT Return, schema DDVO_4.xsd). "
+                "Use when the user mentions: slovenian, slovenia, ddv, kpr, edavki, furs, davki, SI."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "period_start":    {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "period_end":      {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "tax_number":      {"type": "string", "description": "Davčna številka, 8 digits"},
+                    "taxpayer_name":   {"type": "string", "description": "Company name"},
+                },
+                "required": ["period_start", "period_end"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_belgian_vat",
+            "description": (
+                "Generate official Belgian Intervat VAT return XML for submission to FPS Finance Belgium. "
+                "Use when the user mentions: belgian, belgium, intervat, vat return, BE VAT."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "period_start":     {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "period_end":       {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "declarant_vat":    {"type": "string", "description": "Belgian VAT number BE0..."},
+                    "declarant_name":   {"type": "string"},
+                    "declarant_street": {"type": "string"},
+                    "declarant_city":   {"type": "string"},
+                    "declarant_postal": {"type": "string"},
+                    "declarant_email":  {"type": "string"},
+                },
+                "required": ["period_start", "period_end"],
+            },
+        },
+    },
+]
+
+
+async def dispatch_prompt(prompt: str) -> dict[str, Any]:
+    """
+    Use OpenAI tool calling to determine the user's intent and extract parameters.
+    Returns {"tool": "<name>", "args": {...}}.
+    Falls back to generate_sql_report via the legacy JSON path on any failure.
+    """
+    if not settings.OPENAI_API_KEY:
+        return {"tool": "generate_sql_report", "args": _fallback_template(prompt)}
+
+    today = date.today()
+    system = (
+        f"Today's date is {today.isoformat()} (year {today.year}). "
+        f"Q1 = {today.year}-01-01 to {today.year}-03-31 unless the user specifies otherwise. "
+        "You are an e-invoicing analytics assistant. "
+        "Choose the right tool based on the user's intent and extract all parameters from their message. "
+        "Use sensible defaults for missing parameters (e.g. tax_number='12345678', "
+        "taxpayer_name='Demo Company d.o.o.', period = current quarter).\n\n"
+        + REPORT_SYSTEM_PROMPT
+    )
+
+    try:
+        client = _get_client()
+        response = await client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user",   "content": prompt},
+            ],
+            tools=_TOOLS,
+            tool_choice="required",
+            temperature=0.1,
+            max_tokens=1024,
+        )
+        msg = response.choices[0].message
+        if msg.tool_calls:
+            call = msg.tool_calls[0]
+            return {
+                "tool": call.function.name,
+                "args": json.loads(call.function.arguments),
+            }
+    except Exception:
+        pass
+
+    # Fallback: treat as SQL report via legacy path
+    legacy = await generate_report_definition(prompt)
+    return {"tool": "generate_sql_report", "args": legacy}
 
 
 async def explain_report(

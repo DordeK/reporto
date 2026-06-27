@@ -8,9 +8,9 @@ const SAMPLE_PROMPTS = [
   "Generate VAT by rate for Q1",
   "Show VAT by supplier this quarter",
   "Create a Belgian VAT return draft",
+  "Generate Slovenian DDV return (KPR + DDV-O)",
   "Show spend by supplier",
   "Find anomalies in received invoices",
-  "Why is VAT payable higher this quarter?",
 ];
 
 

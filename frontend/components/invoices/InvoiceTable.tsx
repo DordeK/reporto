@@ -132,10 +132,10 @@ export default function InvoiceTable({
                       {formatDate(inv.issue_date)}
                     </td>
                     <td className="px-4 py-3 text-right font-medium" style={{ color: "#f1f5f9" }}>
-                      {formatEur(inv.total_amount, inv.currency)}
+                      {formatEur(inv.payable_amount ?? 0, inv.currency)}
                     </td>
                     <td className="px-4 py-3 text-right" style={{ color: "#94a3b8" }}>
-                      {formatEur(inv.vat_amount, inv.currency)}
+                      {formatEur(inv.tax_amount ?? 0, inv.currency)}
                     </td>
                     <td className="px-4 py-3" style={{ color: "#64748b" }}>
                       {inv.currency}
