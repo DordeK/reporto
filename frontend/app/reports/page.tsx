@@ -9,6 +9,7 @@ import DatasetCompleteness from "@/components/reports/DatasetCompleteness";
 import DataQualityScore from "@/components/reports/DataQualityScore";
 import ValidationPanel from "@/components/reports/ValidationPanel";
 import DrilldownModal from "@/components/reports/DrilldownModal";
+import DrillableReportTable from "@/components/reports/DrillableReportTable";
 import { AlertTriangle, Sparkles, Download } from "lucide-react";
 
 type ReportTab = "results" | "explanation" | "definition" | "validation";
