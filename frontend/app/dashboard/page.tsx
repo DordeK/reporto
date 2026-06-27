@@ -64,7 +64,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-5 gap-4 mb-6">
         <StatsCard
           title="Total Invoices"
-          value={stats?.total_invoices ?? 0}
+          value={stats?.totalInvoices ?? 0}
           icon={FileText}
           color="#3b82f6"
           subtitle="All time"
@@ -72,7 +72,7 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Received"
-          value={stats?.received_invoices ?? 0}
+          value={stats?.receivedInvoices ?? 0}
           icon={ArrowDownCircle}
           color="#22c55e"
           subtitle="Inbound invoices"
@@ -80,7 +80,7 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Sent"
-          value={stats?.sent_invoices ?? 0}
+          value={stats?.sentInvoices ?? 0}
           icon={ArrowUpCircle}
           color="#a855f7"
           subtitle="Outbound invoices"
@@ -88,7 +88,7 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Total VAT"
-          value={stats ? formatEur(stats.total_vat) : "—"}
+          value={stats ? formatEur(stats.totalVat) : "—"}
           icon={Receipt}
           color="#f59e0b"
           subtitle="VAT collected"
@@ -96,18 +96,18 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Anomalies"
-          value={stats?.anomaly_count ?? 0}
+          value={stats?.anomalyCount ?? 0}
           icon={AlertTriangle}
-          color={stats && stats.anomaly_count > 0 ? "#ef4444" : "#22c55e"}
-          subtitle={stats?.anomaly_count === 0 ? "All clear" : "Require review"}
+          color={stats && stats.anomalyCount > 0 ? "#ef4444" : "#22c55e"}
+          subtitle={stats?.anomalyCount === 0 ? "All clear" : "Require review"}
           loading={loading}
         />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <VatBarChart vatByRate={stats?.vat_by_rate ?? []} loading={loading} />
-        <SourcePieChart bySource={stats?.by_source ?? { upload: 0, email: 0, provider: 0 }} loading={loading} />
+        <VatBarChart vatByRate={stats?.vatByRate ?? []} loading={loading} />
+        <SourcePieChart bySource={stats?.invoicesBySource ?? { upload: 0 }} loading={loading} />
       </div>
 
       {/* Bottom Row: Recent Reports + Quick Actions */}
@@ -191,8 +191,8 @@ export default function DashboardPage() {
                 View Anomalies
               </p>
               <p className="text-xs" style={{ color: "#64748b" }}>
-                {stats?.anomaly_count
-                  ? `${stats.anomaly_count} issues detected`
+                {stats?.anomalyCount
+                  ? `${stats.anomalyCount} issues detected`
                   : "Check compliance"}
               </p>
             </div>

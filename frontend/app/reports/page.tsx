@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import {
   generateReport,
   generateBelgianVatReturn,
+  generateSlovenianVatReturn,
+  SlovenianVatResult,
   ReportResult,
 } from "@/lib/api";
 import ReportChat, { ChatMessage } from "@/components/reports/ReportChat";
@@ -27,10 +29,16 @@ const SEVERITY_STYLE: Record<string, { bg: string; color: string; border: string
 };
 
 const BELGIAN_VAT_KEYWORDS = ["belgian vat return", "belgian vat", "vat return", "intervat"];
+const SLOVENIAN_VAT_KEYWORDS = ["slovenian", "slovenian vat", "ddv", "kpr", "furs", "edavki", "davki", "slovenia"];
 
 function isBelgianVatPrompt(prompt: string): boolean {
   const lower = prompt.toLowerCase();
   return BELGIAN_VAT_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+function isSlovenianVatPrompt(prompt: string): boolean {
+  const lower = prompt.toLowerCase();
+  return SLOVENIAN_VAT_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 // Belgian VAT Return form component
@@ -255,6 +263,243 @@ function BelgianVatPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── Slovenian VAT Panel ──────────────────────────────────────────────────────
+
+const SI_BOX_LABELS: Record<string, string> = {
+  "41": "Taxable base — standard rate 22%",
+  "42": "Input VAT — standard rate 22%",
+  "43": "Taxable base — reduced rate 9.5%",
+  "44": "Input VAT — reduced rate 9.5%",
+  "45": "Taxable base — reduced rate 5%",
+  "46": "Input VAT — reduced rate 5%",
+  "50": "Exempt purchases",
+  "52": "Total deductible input VAT",
+  "60": "Total purchases incl. VAT",
+};
+
+function SlovenianVatPanel({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({
+    period_start: "2026-01-01",
+    period_end:   "2026-03-31",
+    tax_number:   "",
+    taxpayer_name: "",
+  });
+  const [loading, setLoading]   = useState(false);
+  const [result, setResult]     = useState<SlovenianVatResult | null>(null);
+  const [error, setError]       = useState<string | null>(null);
+  const [activeDoc, setActiveDoc] = useState<"kpr" | "ddvo">("kpr");
+
+  const handleChange = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((p) => ({ ...p, [field]: e.target.value }));
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setResult(await generateSlovenianVatReturn(form));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Generation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = (xml: string, filename: string) => {
+    const blob = new Blob([xml], { type: "application/xml" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const inputStyle = {
+    background: "#0f172a", border: "1px solid #334155",
+    color: "#f1f5f9", borderRadius: 8, padding: "8px 12px",
+    fontSize: 13, width: "100%",
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid #334155" }}>
+        <div>
+          <h2 className="text-lg font-bold" style={{ color: "#f1f5f9" }}>🇸🇮 Slovenian DDV Return</h2>
+          <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
+            KPR + DDV-O · eDavki / FURS — Finančna uprava RS
+          </p>
+        </div>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: 20 }}>✕</button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        {error && (
+          <div className="rounded-lg px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>
+            {error}
+          </div>
+        )}
+
+        {!result ? (
+          <>
+            <div className="rounded-xl p-4" style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)" }}>
+              <p className="text-xs" style={{ color: "#94a3b8", lineHeight: 1.6 }}>
+                Generates two official XML files for submission to <strong style={{ color: "#a5b4fc" }}>beta.edavki.durs.si</strong>:<br />
+                <strong style={{ color: "#a5b4fc" }}>KPR</strong> — Knjiga Prejetih Računov (Purchase Ledger, schema KPR_3.xsd)<br />
+                <strong style={{ color: "#a5b4fc" }}>DDV-O</strong> — Periodična DDV napoved (VAT Return, schema DDVO_4.xsd)
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "#64748b" }}>Period Start</label>
+                <input type="date" value={form.period_start} onChange={handleChange("period_start")} style={inputStyle} />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: "#64748b" }}>Period End</label>
+                <input type="date" value={form.period_end} onChange={handleChange("period_end")} style={inputStyle} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs mb-1" style={{ color: "#64748b" }}>Tax Number (davčna številka)</label>
+              <input type="text" placeholder="12345678" value={form.tax_number} onChange={handleChange("tax_number")} style={inputStyle} />
+            </div>
+            <div>
+              <label className="block text-xs mb-1" style={{ color: "#64748b" }}>Company Name</label>
+              <input type="text" placeholder="Your Company d.o.o." value={form.taxpayer_name} onChange={handleChange("taxpayer_name")} style={inputStyle} />
+            </div>
+
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold w-full justify-center"
+              style={{
+                background: !loading ? "linear-gradient(135deg, #6366f1, #3b82f6)" : "#334155",
+                color: !loading ? "#fff" : "#64748b",
+                border: "none", cursor: !loading ? "pointer" : "not-allowed",
+              }}
+            >
+              {loading ? "Generating eDavki XML…" : "Generate KPR + DDV-O"}
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Summary */}
+            <div className="rounded-xl p-4" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+              <p className="text-sm font-semibold" style={{ color: "#4ade80" }}>
+                ✅ eDavki XML Generated — {result.period_start} to {result.period_end}
+              </p>
+              <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
+                {result.entry_count} purchase {result.entry_count === 1 ? "entry" : "entries"} · {result.format}
+              </p>
+            </div>
+
+            {result.warnings.length > 0 && (
+              <div className="rounded-lg p-3" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}>
+                {result.warnings.map((w, i) => <p key={i} className="text-xs" style={{ color: "#fbbf24" }}>⚠ {w}</p>)}
+              </div>
+            )}
+
+            {/* Download buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleDownload(result.kpr_xml, `KPR-${result.period_start}-${result.period_end}.xml`)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold flex-1 justify-center"
+                style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.3)", cursor: "pointer" }}
+              >
+                <Download size={12} /> Download KPR XML
+              </button>
+              <button
+                onClick={() => handleDownload(result.ddvo_xml, `DDVO-${result.period_start}-${result.period_end}.xml`)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold flex-1 justify-center"
+                style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.3)", cursor: "pointer" }}
+              >
+                <Download size={12} /> Download DDV-O XML
+              </button>
+            </div>
+
+            {/* Tab toggle */}
+            <div className="flex gap-2">
+              {(["kpr", "ddvo"] as const).map((doc) => (
+                <button
+                  key={doc}
+                  onClick={() => setActiveDoc(doc)}
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{
+                    background: activeDoc === doc ? "rgba(99,102,241,0.2)" : "#1e293b",
+                    color: activeDoc === doc ? "#a5b4fc" : "#64748b",
+                    border: `1px solid ${activeDoc === doc ? "rgba(99,102,241,0.4)" : "#334155"}`,
+                    cursor: "pointer",
+                  }}
+                >
+                  {doc === "kpr" ? "KPR — Purchase Ledger" : "DDV-O — VAT Return"}
+                </button>
+              ))}
+            </div>
+
+            {/* DDV-O boxes table */}
+            {activeDoc === "ddvo" && (
+              <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #334155" }}>
+                <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#0f172a", borderBottom: "1px solid #334155" }}>
+                      <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>Box</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>Description</th>
+                      <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>Amount (EUR)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(result.boxes).map(([box, amount], i) => (
+                      <tr key={box} style={{ borderBottom: "1px solid #1e293b", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
+                        <td className="px-4 py-2.5 font-mono text-xs" style={{ color: "#a5b4fc" }}>{box}</td>
+                        <td className="px-4 py-2.5 text-xs" style={{ color: "#94a3b8" }}>{SI_BOX_LABELS[box] ?? ""}</td>
+                        <td className="px-4 py-2.5 text-right font-mono" style={{ color: "#f1f5f9" }}>
+                          {new Intl.NumberFormat("sl-SI", { style: "currency", currency: "EUR" }).format(parseFloat(amount))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* KPR XML preview */}
+            {activeDoc === "kpr" && (
+              <div className="rounded-xl overflow-hidden" style={{ border: "1px solid #334155" }}>
+                <div className="px-4 py-2 flex items-center justify-between" style={{ background: "#0f172a", borderBottom: "1px solid #334155" }}>
+                  <span className="text-xs font-semibold" style={{ color: "#64748b" }}>KPR_3.xsd — eDavki envelope preview</span>
+                  <span className="text-xs" style={{ color: "#475569" }}>{result.entry_count} entries</span>
+                </div>
+                <pre
+                  className="text-xs overflow-auto"
+                  style={{
+                    color: "#94a3b8", padding: "16px", maxHeight: 320,
+                    fontFamily: "'Courier New', monospace", lineHeight: 1.5,
+                    background: "#0a0e1a",
+                  }}
+                >
+                  {result.kpr_xml.slice(0, 2400)}{result.kpr_xml.length > 2400 ? "\n…  (download for full document)" : ""}
+                </pre>
+              </div>
+            )}
+
+            <div className="flex gap-2 flex-wrap">
+              <span className="text-xs px-2 py-1 rounded" style={{ background: "#1e293b", color: "#64748b" }}>
+                Schema: {activeDoc === "kpr" ? result.kpr_schema : result.ddvo_schema}
+              </span>
+            </div>
+
+            <button
+              onClick={() => setResult(null)}
+              className="text-xs px-3 py-1.5 rounded-lg"
+              style={{ background: "#334155", color: "#94a3b8", border: "none", cursor: "pointer" }}
+            >
+              Generate another
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Clickable report table with drilldown
 function DrillableReportTable({
   rows,
@@ -381,7 +626,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportResult | null>(null);
   const [activeTab, setActiveTab] = useState<ReportTab>("results");
-  const [showBelgianVat, setShowBelgianVat] = useState(false);
+  const [showBelgianVat, setShowBelgianVat]       = useState(false);
+  const [showSlovenianVat, setShowSlovenianVat]   = useState(false);
 
   // Drilldown state
   const [drilldownRow, setDrilldownRow] = useState<{
@@ -391,9 +637,24 @@ export default function ReportsPage() {
   } | null>(null);
 
   const handleSubmit = useCallback(async (prompt: string) => {
+    // Intercept Slovenian VAT prompt
+    if (isSlovenianVatPrompt(prompt)) {
+      setShowSlovenianVat(true);
+      setShowBelgianVat(false);
+      const userMsgId = newId();
+      const aiMsgId   = newId();
+      setMessages((prev) => [
+        ...prev,
+        { id: userMsgId, role: "user", content: prompt },
+        { id: aiMsgId, role: "assistant", content: "Opening Slovenian DDV return form (eDavki / FURS). Fill in your davčna številka and period on the right.", loading: false },
+      ]);
+      return;
+    }
+
     // Intercept Belgian VAT prompt
     if (isBelgianVatPrompt(prompt)) {
       setShowBelgianVat(true);
+      setShowSlovenianVat(false);
       const userMsgId = newId();
       const aiMsgId = newId();
       setMessages((prev) => [
@@ -437,15 +698,38 @@ export default function ReportsPage() {
       setActiveReport(result);
       setActiveTab("results");
       setShowBelgianVat(false);
+      setShowSlovenianVat(false);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : "Report generation failed";
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === aiMsgId
-            ? { ...m, content: "", loading: false, error: errMsg }
-            : m
-        )
-      );
+
+      // Check if the backend signalled a non-report input
+      let notAReportMessage: string | null = null;
+      try {
+        const parsed = JSON.parse(errMsg.replace(/^API error \d+:\s*/, ""));
+        if (parsed?.detail?.type === "not_a_report") {
+          notAReportMessage = parsed.detail.message;
+        }
+      } catch {
+        // not JSON — fall through to normal error
+      }
+
+      if (notAReportMessage) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? { ...m, content: notAReportMessage as string, loading: false }
+              : m
+          )
+        );
+      } else {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? { ...m, content: "", loading: false, error: errMsg }
+              : m
+          )
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -515,6 +799,7 @@ export default function ReportsPage() {
               setActiveReport(r);
               setActiveTab("results");
               setShowBelgianVat(false);
+              setShowSlovenianVat(false);
             }}
             loading={loading}
           />
@@ -523,7 +808,9 @@ export default function ReportsPage() {
 
       {/* Right Panel: Report Display (60%) */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {showBelgianVat ? (
+        {showSlovenianVat ? (
+          <SlovenianVatPanel onClose={() => setShowSlovenianVat(false)} />
+        ) : showBelgianVat ? (
           <BelgianVatPanel onClose={() => setShowBelgianVat(false)} />
         ) : !activeReport ? (
           <div className="flex-1 flex items-center justify-center">
@@ -694,21 +981,151 @@ export default function ReportsPage() {
                     <p className="text-sm" style={{ color: "#64748b" }}>No validation data available.</p>
                   )}
 
-                  {activeReport.reconciliation && Object.keys(activeReport.reconciliation).length > 0 && (
+                  {/* Currency mixing warning */}
+                  {(() => {
+                    const cc = (activeReport.reconciliation as any)?.currency_check;
+                    if (!cc?.relevant) return null;
+                    return (
+                      <div
+                        className="rounded-xl p-5"
+                        style={{
+                          background: cc.mixed ? "rgba(245,158,11,0.08)" : "rgba(34,197,94,0.08)",
+                          border: `1px solid ${cc.mixed ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)"}`,
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span style={{ fontSize: 14 }}>{cc.mixed ? "⚠" : "✓"}</span>
+                          <h4 className="text-sm font-semibold" style={{ color: cc.mixed ? "#fbbf24" : "#4ade80" }}>
+                            Currency Mixing Check
+                          </h4>
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full ml-auto"
+                            style={{
+                              background: cc.mixed ? "rgba(245,158,11,0.2)" : "rgba(34,197,94,0.2)",
+                              color: cc.mixed ? "#fbbf24" : "#4ade80",
+                            }}
+                          >
+                            {cc.mixed ? "WARNING" : "PASS"}
+                          </span>
+                        </div>
+                        {cc.warning && (
+                          <p className="text-xs mb-3" style={{ color: "#fbbf24" }}>{cc.warning}</p>
+                        )}
+                        {cc.currencies?.length > 0 && (
+                          <div className="rounded-lg overflow-hidden" style={{ border: "1px solid #334155" }}>
+                            <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
+                              <thead>
+                                <tr style={{ background: "#0f172a" }}>
+                                  <th className="px-3 py-2 text-left" style={{ color: "#64748b" }}>Currency (BT-5)</th>
+                                  <th className="px-3 py-2 text-right" style={{ color: "#64748b" }}>Invoices</th>
+                                  <th className="px-3 py-2 text-right" style={{ color: "#64748b" }}>Total Payable</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cc.currencies.map((c: any, i: number) => (
+                                  <tr key={i} style={{ borderTop: "1px solid #1e293b" }}>
+                                    <td className="px-3 py-2 font-mono font-semibold" style={{ color: "#f1f5f9" }}>{c.currency}</td>
+                                    <td className="px-3 py-2 text-right" style={{ color: "#94a3b8" }}>{c.invoice_count}</td>
+                                    <td className="px-3 py-2 text-right font-mono" style={{ color: "#f1f5f9" }}>
+                                      {new Intl.NumberFormat("en-EU", { minimumFractionDigits: 2 }).format(c.total_payable)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* UBL accounting identity check */}
+                  {(() => {
+                    const ui = (activeReport.reconciliation as any)?.ubl_identity;
+                    if (!ui || ui.error) return null;
+                    const pass = ui.passed === true;
+                    const fail = ui.passed === false;
+                    return (
+                      <div
+                        className="rounded-xl p-5"
+                        style={{
+                          background: fail ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)",
+                          border: `1px solid ${fail ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`,
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span style={{ fontSize: 14 }}>{fail ? "✗" : "✓"}</span>
+                          <h4 className="text-sm font-semibold" style={{ color: fail ? "#f87171" : "#4ade80" }}>
+                            UBL Accounting Identity
+                          </h4>
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full ml-auto font-mono"
+                            style={{
+                              background: fail ? "rgba(239,68,68,0.2)" : "rgba(34,197,94,0.2)",
+                              color: fail ? "#f87171" : "#4ade80",
+                            }}
+                          >
+                            {fail ? "FAIL" : "PASS"}
+                          </span>
+                        </div>
+                        <p className="text-xs mb-3 font-mono" style={{ color: "#64748b" }}>{ui.formula}</p>
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                          {[
+                            { label: "BT-115 Payable (actual)", value: ui.sum_payable_bt115 },
+                            { label: "BT-115 Payable (expected)", value: ui.expected_payable },
+                            { label: "BT-109 Excl. VAT", value: ui.sum_net_bt109 },
+                            { label: "BT-110 VAT", value: ui.sum_vat_bt110 },
+                            { label: "BT-113 Prepaid", value: ui.sum_prepaid_bt113 },
+                            { label: `Δ Delta (tol. ${ui.tolerance})`, value: ui.delta },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="rounded-lg px-3 py-2" style={{ background: "#0f172a" }}>
+                              <div className="text-xs mb-0.5" style={{ color: "#64748b" }}>{label}</div>
+                              <div className="text-sm font-mono font-semibold" style={{ color: "#f1f5f9" }}>
+                                {typeof value === "number" ? value.toLocaleString("en-EU", { minimumFractionDigits: 2 }) : value}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs" style={{ color: "#475569" }}>
+                          Checked across {ui.invoice_count} invoice{ui.invoice_count !== 1 ? "s" : ""}.
+                          {ui.skipped_filters?.length > 0 && ` Filters on ${ui.skipped_filters.join(", ")} were skipped (invoice-level check only).`}
+                        </p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Step 4 reconciliation — filter out the new sub-keys */}
+                  {activeReport.reconciliation && Object.keys(activeReport.reconciliation).filter(k => !["ubl_identity","currency_check"].includes(k)).length > 0 && (
                     <div
                       className="rounded-xl p-5"
                       style={{ background: "#1e293b", border: "1px solid #334155" }}
                     >
                       <h4 className="text-sm font-semibold mb-3" style={{ color: "#94a3b8" }}>
-                        Reconciliation Details
+                        Step 4 — Sum Reconciliation
                       </h4>
-                      <div className="space-y-2">
-                        {Object.entries(activeReport.reconciliation).map(([key, val]) => (
-                          <div key={key} className="flex justify-between text-xs">
-                            <span style={{ color: "#64748b" }}>{key.replace(/_/g, " ")}</span>
-                            <span style={{ color: "#f1f5f9" }}>{String(val)}</span>
-                          </div>
-                        ))}
+                      <div className="space-y-3">
+                        {Object.entries(activeReport.reconciliation)
+                          .filter(([k]) => !["ubl_identity", "currency_check"].includes(k))
+                          .map(([key, val]: [string, any]) => (
+                            <div key={key} className="rounded-lg px-3 py-2.5" style={{ background: "#0f172a" }}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-semibold" style={{ color: "#94a3b8" }}>{key.replace(/_/g, " ")}</span>
+                                <span
+                                  className="text-xs px-2 py-0.5 rounded-full"
+                                  style={{
+                                    background: val?.match ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)",
+                                    color: val?.match ? "#4ade80" : "#fbbf24",
+                                  }}
+                                >
+                                  {val?.match ? "MATCH" : "MISMATCH"}
+                                </span>
+                              </div>
+                              <div className="flex gap-4 text-xs">
+                                <span style={{ color: "#64748b" }}>Report: <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>{val?.report_total}</span></span>
+                                <span style={{ color: "#64748b" }}>DB total: <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>{val?.independent_total}</span></span>
+                              </div>
+                            </div>
+                          ))}
                       </div>
                     </div>
                   )}

@@ -3,13 +3,16 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface DashboardStats {
-  total_invoices: number;
-  received_invoices: number;
-  sent_invoices: number;
-  total_vat: number;
-  anomaly_count: number;
-  vat_by_rate: { rate: number; taxable_amount: number; vat_amount: number }[];
-  by_source: { upload: number; email: number; provider: number };
+  totalInvoices: number;
+  receivedInvoices: number;
+  sentInvoices: number;
+  totalVat: number;
+  totalSpend: number;
+  anomalyCount: number;
+  highSeverityAnomalies: number;
+  vatByRate: { tax_percent: number; tax_amount: number }[];
+  invoicesBySource: { upload?: number; email?: number; provider?: number; peppol?: number };
+  recentReports: { id: string; user_prompt: string; report_name: string; row_count: number; created_at: string }[];
 }
 
 export interface UploadResult {
@@ -25,10 +28,10 @@ export interface Invoice {
   supplier_name: string;
   customer_name: string;
   issue_date: string;
-  total_amount: number;
-  vat_amount: number;
+  payable_amount: number;
+  tax_amount: number;
   currency: string;
-  source: "upload" | "email" | "provider";
+  source: "upload" | "email" | "provider" | "peppol";
   anomaly_count: number;
   direction?: "received" | "sent";
   invoice_type?: string;
@@ -269,9 +272,38 @@ export async function listReports(): Promise<ReportRun[]> {
   return apiFetch<ReportRun[]>("/reports");
 }
 
+export interface SlovenianVatResult {
+  period_start: string;
+  period_end: string;
+  entry_count: number;
+  boxes: Record<string, string>;
+  kpr_xml: string;
+  ddvo_xml: string;
+  format: string;
+  kpr_schema: string;
+  ddvo_schema: string;
+  warnings: string[];
+}
+
+export async function generateSlovenianVatReturn(params: {
+  period_start: string;
+  period_end: string;
+  tax_number: string;
+  taxpayer_name: string;
+}): Promise<SlovenianVatResult> {
+  const r = await fetch(`${BASE_URL}/reports/slovenian-vat-return`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
 export async function listAnomalies(severity?: string): Promise<Anomaly[]> {
   const qs = severity ? `?severity=${severity}` : "";
-  return apiFetch<Anomaly[]>(`/anomalies${qs}`);
+  const res = await apiFetch<{ items: Anomaly[] } | Anomaly[]>(`/anomalies${qs}`);
+  return Array.isArray(res) ? res : res.items ?? [];
 }
 
 export interface OutgoingLine {

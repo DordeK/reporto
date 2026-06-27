@@ -101,10 +101,10 @@ export default function InvoiceDetailComponent({ invoice }: InvoiceDetailProps) 
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold" style={{ color: "#f1f5f9" }}>
-              {formatEur(invoice.total_amount, invoice.currency)}
+              {formatEur(invoice.payable_amount, invoice.currency)}
             </div>
             <div className="text-sm mt-1" style={{ color: "#64748b" }}>
-              incl. VAT {formatEur(invoice.vat_amount, invoice.currency)}
+              incl. VAT {formatEur(invoice.tax_amount, invoice.currency)}
             </div>
           </div>
         </div>

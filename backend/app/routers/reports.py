@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from datetime import date as _date
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import ValidationError
@@ -22,6 +23,8 @@ from app.services.report_validator import (
     get_dataset_completeness,
     reconcile_report,
     compute_data_quality_score,
+    verify_ubl_accounting_identity,
+    check_currency_mixing,
 )
 from app.services import audit_service
 
@@ -118,6 +121,13 @@ async def generate_report(
     # ── SQL analytics report (existing pipeline) ─────────────────────────────
     raw_definition = args
 
+    # Handle non-report inputs gracefully
+    if raw_definition.get("not_a_report"):
+        raise HTTPException(
+            status_code=400,
+            detail={"type": "not_a_report", "message": raw_definition.get("message", "Please ask a report-related question.")},
+        )
+
     # 2. Validate the definition with Pydantic
     try:
         report_def_obj = ReportDefinition(**raw_definition)
@@ -165,6 +175,12 @@ async def generate_report(
     # Step 4: Reconciliation
     reconciliation = await reconcile_report(db, raw_definition, rows)
 
+    # Step 7: UBL accounting identity (BT-115 = BT-109 + BT-110 − BT-113)
+    ubl_identity = await verify_ubl_accounting_identity(db, raw_definition)
+
+    # Step 8: Currency mixing warning
+    currency_check = await check_currency_mixing(db, raw_definition)
+
     # Step 6: Data quality score
     quality_score = await compute_data_quality_score(db)
 
@@ -185,7 +201,7 @@ async def generate_report(
         row_count=len(rows),
         validation_errors=validation_errors if validation_errors else None,
         dataset_completeness=completeness,
-        reconciliation=reconciliation,
+        reconciliation={**reconciliation, "ubl_identity": ubl_identity, "currency_check": currency_check},
         data_quality_score=quality_score,
     )
     db.add(run)
@@ -209,11 +225,11 @@ async def generate_report(
         "reportRunId": str(run.id),
         "validation": {
             "errors": validation_errors + sql_errors,
-            "warnings": [],
+            "warnings": [currency_check["warning"]] if currency_check.get("warning") else [],
             "passed": len(validation_errors) == 0 and len(sql_errors) == 0,
         },
         "datasetCompleteness": completeness,
-        "reconciliation": reconciliation,
+        "reconciliation": {**reconciliation, "ubl_identity": ubl_identity, "currency_check": currency_check},
         "dataQualityScore": quality_score,
     }
 
@@ -266,6 +282,18 @@ async def report_drilldown(run_id: str, group_key: str = None, db: AsyncSession 
     params = {}
     where_parts = ["1=1"]
 
+    _DATE_COLS = {"i.issue_date", "i.due_date", "i.tax_point_date",
+                  "i.invoice_period_start", "i.invoice_period_end",
+                  "i.delivery_actual_delivery_date"}
+
+    def _coerce(col: str, v):
+        if col in _DATE_COLS and isinstance(v, str):
+            try:
+                return _date.fromisoformat(v)
+            except ValueError:
+                pass
+        return v
+
     # Apply report filters
     for idx, flt in enumerate(report_def.get("filters", [])):
         field = flt.get("field", "")
@@ -287,17 +315,17 @@ async def report_drilldown(run_id: str, group_key: str = None, db: AsyncSession 
         pk = f"df_{idx}"
         if op == "between":
             where_parts.append(f"{col} BETWEEN :{pk}_a AND :{pk}_b")
-            params[f"{pk}_a"] = value[0]
-            params[f"{pk}_b"] = value[1]
+            params[f"{pk}_a"] = _coerce(col, value[0])
+            params[f"{pk}_b"] = _coerce(col, value[1])
         elif op == "eq":
             where_parts.append(f"{col} = :{pk}")
-            params[pk] = value
+            params[pk] = _coerce(col, value)
         elif op == "gte":
             where_parts.append(f"{col} >= :{pk}")
-            params[pk] = value
+            params[pk] = _coerce(col, value)
         elif op == "lte":
             where_parts.append(f"{col} <= :{pk}")
-            params[pk] = value
+            params[pk] = _coerce(col, value)
 
     # Apply group key filter
     if group_key:
@@ -417,4 +445,58 @@ async def generate_belgian_vat_return(
         "xml": xml_content,
         "format": "Intervat XML (Belgian FPS Finance)",
         "warnings": grids.get("warnings", []),
+    }
+
+
+# ---------------------------------------------------------------------------
+# POST /reports/slovenian-vat-return
+# ---------------------------------------------------------------------------
+
+@router.post("/slovenian-vat-return")
+async def generate_slovenian_vat_return(
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generate official Slovenian DDV documents for eDavki submission:
+      - KPR (Knjiga Prejetih Računov / Purchase Ledger)
+      - DDV-O (Periodična DDV napoved / Periodic VAT Return)
+
+    Portal: https://beta.edavki.durs.si
+    Authority: FURS — Finančna uprava Republike Slovenije
+    """
+    from app.services.slovenian_vat_return import (
+        fetch_purchase_ledger,
+        compute_ddvo_boxes,
+        generate_kpr_xml,
+        generate_ddvo_xml,
+    )
+    from datetime import date as _date
+
+    period_start = _date.fromisoformat(body.get("period_start", "2026-01-01"))
+    period_end   = _date.fromisoformat(body.get("period_end",   "2026-03-31"))
+    tax_number   = body.get("tax_number",    "12345678")
+    taxpayer_name = body.get("taxpayer_name", "Your Company d.o.o.")
+
+    entries = await fetch_purchase_ledger(db, period_start, period_end)
+    boxes   = await compute_ddvo_boxes(db, period_start, period_end)
+
+    kpr_xml  = generate_kpr_xml(entries, tax_number, period_start, period_end)
+    ddvo_xml = generate_ddvo_xml(boxes, tax_number, taxpayer_name, period_start, period_end)
+
+    warnings = []
+    if not entries:
+        warnings.append("No received invoices found for this period — KPR contains no entries.")
+
+    return {
+        "period_start":    period_start.isoformat(),
+        "period_end":      period_end.isoformat(),
+        "entry_count":     len(entries),
+        "boxes":           boxes,
+        "kpr_xml":         kpr_xml,
+        "ddvo_xml":        ddvo_xml,
+        "format":          "eDavki XML (FURS — Finančna uprava RS)",
+        "kpr_schema":      "http://edavki.durs.si/Documents/Schemas/KPR_3.xsd",
+        "ddvo_schema":     "http://edavki.durs.si/Documents/Schemas/DDVO_4.xsd",
+        "warnings":        warnings,
     }

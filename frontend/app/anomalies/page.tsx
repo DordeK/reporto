@@ -67,7 +67,7 @@ export default function AnomaliesPage() {
           )}
         </div>
         <p className="text-sm" style={{ color: "#64748b" }}>
-          Invoice compliance issues detected by AI
+          Rule-based compliance checks on invoices ingested from e-invoices.be and manual uploads — duplicate numbers, VAT mismatches, date errors, and more
         </p>
 
         {/* Severity breakdown */}
