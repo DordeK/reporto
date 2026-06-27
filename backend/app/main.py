@@ -7,12 +7,10 @@ from app.routers import invoices, reports, anomalies, dashboard, audit
 
 app = FastAPI(title="E-Invoice Compliance Engine", version="1.0.0")
 
-_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
