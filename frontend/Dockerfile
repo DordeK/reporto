@@ -6,4 +6,4 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npm run build
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx next start -p ${PORT:-3000}"]
