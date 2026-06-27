@@ -14,9 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.models import ReportRun
+<<<<<<< Updated upstream
 from app.schemas.report import GenerateReportRequest, ReportDefinition
 from app.services.ai_service import dispatch_prompt, explain_report, generate_report_definition
 from app.services.report_engine import execute_report
+=======
+from app.services.ai_service import explain_report, generate_report_definition, dispatch_prompt
+from app.services.report_engine import execute_report, GenerateReportRequest, ReportDefinition
+>>>>>>> Stashed changes
 from app.services.report_validator import (
     validate_report_definition,
     validate_sql,

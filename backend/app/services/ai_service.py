@@ -305,6 +305,132 @@ async def generate_report_definition(prompt: str) -> dict[str, Any]:
         return _fallback_template(prompt)
 
 
+# ---------------------------------------------------------------------------
+# Tool definitions for intent dispatch
+# ---------------------------------------------------------------------------
+
+_TOOLS: list[dict[str, Any]] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_sql_report",
+            "description": (
+                "Generate a tabular analytics report from invoice/VAT data. "
+                "Use for any question about totals, breakdowns, trends, supplier spend, "
+                "invoice listings, or VAT analysis that results in a table of numbers."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reportName":  {"type": "string"},
+                    "entity":      {"type": "string", "enum": ["invoices", "tax_subtotals", "invoice_lines"]},
+                    "filters":     {"type": "array",  "items": {"type": "object"}},
+                    "groupBy":     {"type": "array",  "items": {"type": "string"}},
+                    "metrics":     {"type": "array",  "items": {"type": "object"}},
+                    "orderBy":     {"type": "array",  "items": {"type": "object"}},
+                    "limit":       {"type": "integer"},
+                },
+                "required": ["reportName", "entity", "metrics"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_slovenian_ddv",
+            "description": (
+                "Generate official Slovenian DDV (VAT) XML documents for eDavki submission to FURS "
+                "(Finančna uprava RS): KPR (Knjiga Prejetih Računov / Purchase Ledger, schema KPR_3.xsd) "
+                "and DDV-O (Periodic VAT Return, schema DDVO_4.xsd). "
+                "Use when the user mentions: slovenian, slovenia, ddv, kpr, edavki, furs, davki, SI."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "period_start":    {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "period_end":      {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "tax_number":      {"type": "string", "description": "Davčna številka, 8 digits"},
+                    "taxpayer_name":   {"type": "string", "description": "Company name"},
+                },
+                "required": ["period_start", "period_end"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_belgian_vat",
+            "description": (
+                "Generate official Belgian Intervat VAT return XML for submission to FPS Finance Belgium. "
+                "Use when the user mentions: belgian, belgium, intervat, vat return, BE VAT."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "period_start":     {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "period_end":       {"type": "string", "description": "ISO date YYYY-MM-DD"},
+                    "declarant_vat":    {"type": "string", "description": "Belgian VAT number BE0..."},
+                    "declarant_name":   {"type": "string"},
+                    "declarant_street": {"type": "string"},
+                    "declarant_city":   {"type": "string"},
+                    "declarant_postal": {"type": "string"},
+                    "declarant_email":  {"type": "string"},
+                },
+                "required": ["period_start", "period_end"],
+            },
+        },
+    },
+]
+
+
+async def dispatch_prompt(prompt: str) -> dict[str, Any]:
+    """
+    Use OpenAI tool calling to determine the user's intent and extract parameters.
+    Returns {"tool": "<name>", "args": {...}}.
+    Falls back to generate_sql_report via the legacy JSON path on any failure.
+    """
+    if not settings.OPENAI_API_KEY:
+        return {"tool": "generate_sql_report", "args": _fallback_template(prompt)}
+
+    today = date.today()
+    system = (
+        f"Today's date is {today.isoformat()} (year {today.year}). "
+        f"Q1 = {today.year}-01-01 to {today.year}-03-31 unless the user specifies otherwise. "
+        "You are an e-invoicing analytics assistant. "
+        "Choose the right tool based on the user's intent and extract all parameters from their message. "
+        "Use sensible defaults for missing parameters (e.g. tax_number='12345678', "
+        "taxpayer_name='Demo Company d.o.o.', period = current quarter).\n\n"
+        + REPORT_SYSTEM_PROMPT
+    )
+
+    try:
+        client = _get_client()
+        response = await client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user",   "content": prompt},
+            ],
+            tools=_TOOLS,
+            tool_choice="required",
+            temperature=0.1,
+            max_tokens=1024,
+        )
+        msg = response.choices[0].message
+        if msg.tool_calls:
+            call = msg.tool_calls[0]
+            return {
+                "tool": call.function.name,
+                "args": json.loads(call.function.arguments),
+            }
+    except Exception:
+        pass
+
+    # Fallback: treat as SQL report via legacy path
+    legacy = await generate_report_definition(prompt)
+    return {"tool": "generate_sql_report", "args": legacy}
+
+
 async def explain_report(
     prompt: str,
     report_def: dict[str, Any],
