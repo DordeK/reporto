@@ -240,27 +240,87 @@ export default function ReportsPage() {
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {activeTab === "results" && (
                 <div>
-                  {activeReport.datasetCompleteness && (
-                    <DatasetCompleteness data={activeReport.datasetCompleteness} />
-                  )}
-
-                  {activeReport.rows && activeReport.rows.length > 0 && (
-                    <ReportChart
-                      rows={activeReport.rows}
-                      title={activeReport.reportDefinition?.name}
-                    />
-                  )}
-
-                  <DrillableReportTable
-                    rows={activeReport.rows ?? []}
-                    groupByFields={activeReport.reportDefinition?.group_by ?? []}
-                    onRowClick={handleRowClick}
-                  />
-
-                  {activeReport.dataQualityScore && (
-                    <div className="mt-4">
-                      <DataQualityScore data={activeReport.dataQualityScore} />
+                  {/* XML report types (Slovenian DDV, Belgian VAT) */}
+                  {activeReport.reportType === "slovenian_ddv" && activeReport.xmlData ? (
+                    <div className="space-y-4">
+                      {activeReport.warnings && activeReport.warnings.length > 0 && (
+                        <div className="rounded-xl px-4 py-3 flex items-center gap-2"
+                          style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#fbbf24" }}>
+                          <AlertTriangle size={15} />
+                          <span className="text-sm">{activeReport.warnings[0]}</span>
+                        </div>
+                      )}
+                      <div className="rounded-xl p-5 space-y-4"
+                        style={{ background: "#1e293b", border: "1px solid #334155" }}>
+                        <h4 className="text-sm font-semibold" style={{ color: "#94a3b8" }}>
+                          eDavki XML Documents — {activeReport.xmlData.entry_count ?? 0} purchase entries
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          {[
+                            { key: "kpr_xml", label: "KPR XML", desc: "Knjiga Prejetih Računov", filename: "kpr.xml" },
+                            { key: "ddvo_xml", label: "DDV-O XML", desc: "Periodična DDV napoved", filename: "ddvo.xml" },
+                          ].map(({ key, label, desc, filename }) => (
+                            <button
+                              key={key}
+                              onClick={() => {
+                                const blob = new Blob([activeReport.xmlData![key]], { type: "application/xml" });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = url; a.download = filename; a.click();
+                                URL.revokeObjectURL(url);
+                              }}
+                              className="rounded-xl p-4 text-left transition-colors"
+                              style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", cursor: "pointer" }}
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <Download size={14} color="#60a5fa" />
+                                <span className="text-sm font-semibold" style={{ color: "#60a5fa" }}>{label}</span>
+                              </div>
+                              <p className="text-xs" style={{ color: "#64748b" }}>{desc}</p>
+                            </button>
+                          ))}
+                        </div>
+                        {activeReport.xmlData.boxes && (
+                          <div>
+                            <p className="text-xs font-semibold mb-2" style={{ color: "#64748b" }}>DDV-O Box Values</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {Object.entries(activeReport.xmlData.boxes as Record<string, string>).map(([box, val]) => (
+                                <div key={box} className="rounded-lg px-3 py-2 text-center"
+                                  style={{ background: "#0f172a", border: "1px solid #334155" }}>
+                                  <div className="text-xs font-mono" style={{ color: "#64748b" }}>Box {box}</div>
+                                  <div className="text-sm font-semibold" style={{ color: "#f1f5f9" }}>€{val}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      {activeReport.datasetCompleteness && (
+                        <DatasetCompleteness data={activeReport.datasetCompleteness} />
+                      )}
+
+                      {activeReport.rows && activeReport.rows.length > 0 && (
+                        <ReportChart
+                          rows={activeReport.rows}
+                          title={activeReport.reportDefinition?.name}
+                        />
+                      )}
+
+                      <DrillableReportTable
+                        rows={activeReport.rows ?? []}
+                        groupByFields={activeReport.reportDefinition?.group_by ?? []}
+                        onRowClick={handleRowClick}
+                      />
+
+                      {activeReport.dataQualityScore && (
+                        <div className="mt-4">
+                          <DataQualityScore data={activeReport.dataQualityScore} />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

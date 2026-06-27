@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://reporto-production.up.railway.app";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -140,6 +140,9 @@ export interface ReportResult {
   datasetCompleteness?: DatasetCompleteness;
   reconciliation?: Record<string, any>;
   dataQualityScore?: DataQualityScore;
+  reportType?: string;
+  xmlData?: Record<string, any>;
+  warnings?: string[];
 }
 
 export interface ReportRun {
