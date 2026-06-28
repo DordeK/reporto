@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Sidebar from "@/components/layout/Sidebar";
+import AppShell from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
   title: "Reporto — E-Invoicing Compliance",
@@ -14,16 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body style={{ background: "#0f172a", color: "#f1f5f9", margin: 0 }}>
-        <div className="flex h-screen overflow-hidden" style={{ background: "#0f172a" }}>
-          <Sidebar />
-          <main
-            className="flex-1 overflow-y-auto"
-            style={{ background: "#0f172a", minHeight: "100vh" }}
-          >
-            {children}
-          </main>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

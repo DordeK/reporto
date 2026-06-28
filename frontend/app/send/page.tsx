@@ -133,7 +133,7 @@ function PartyForm({
   return (
     <div>
       <p style={sectionTitle}>{title}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Company name" value={party.name} onChange={set("name")} placeholder="Acme NV" />
         <Field label="VAT number" value={party.vat_id} onChange={set("vat_id")} placeholder="BE0123456789" />
         <Field label="Street" value={party.street_name || ""} onChange={set("street_name")} placeholder="Rue de la Loi 16" />
@@ -394,7 +394,7 @@ export default function SendInvoicePage() {
 
   if (result) {
     return (
-      <div className="p-6 max-w-4xl mx-auto flex flex-col gap-4">
+      <div className="p-4 md:p-6 max-w-4xl mx-auto flex flex-col gap-4">
         <div style={{ ...card, borderColor: "rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.05)" }}>
           <div className="flex items-center gap-3 mb-4">
             <CheckCircle size={24} color="#22c55e" />
@@ -404,7 +404,7 @@ export default function SendInvoicePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4" style={{ marginTop: 12 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ marginTop: 12 }}>
             <div style={{ background: "#0f172a", borderRadius: 8, padding: 12, border: "1px solid #1e293b" }}>
               <div style={{ fontSize: 11, color: "#475569", marginBottom: 4 }}>Storage</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: "#22c55e" }}>Saved to DB</div>
@@ -459,7 +459,7 @@ export default function SendInvoicePage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto flex flex-col gap-4">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto flex flex-col gap-4">
       <div className="mb-2">
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9", letterSpacing: "-0.02em" }}>
           Send Invoice via Peppol
@@ -481,7 +481,7 @@ export default function SendInvoicePage() {
       {/* Header fields */}
       <div style={card}>
         <p style={sectionTitle}>Invoice details</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Field label="Invoice number" value={invoiceNumber} onChange={setInvoiceNumber} placeholder="INV-001" />
           <Field label="Issue date" value={issueDate} onChange={setIssueDate} type="date" />
           <Field label="Due date" value={dueDate} onChange={setDueDate} type="date" />
@@ -492,7 +492,7 @@ export default function SendInvoicePage() {
             </select>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
           <Field label="Note (optional)" value={note} onChange={setNote} placeholder="Free text note on invoice" />
           <Field label="Payment terms" value={paymentTerms} onChange={setPaymentTerms} placeholder="Payment within 30 days" />
         </div>
@@ -502,7 +502,7 @@ export default function SendInvoicePage() {
       </div>
 
       {/* Parties */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div style={card}>
           <PartyForm title="Supplier (you)" party={supplier} onChange={setSupplier} showIban />
         </div>

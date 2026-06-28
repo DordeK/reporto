@@ -177,7 +177,7 @@ export default function FileUploader() {
           <p className="text-sm font-semibold mb-3" style={{ color: "#4ade80" }}>
             Peppol sync complete
           </p>
-          <div className="grid grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <div className="text-center rounded-lg p-3" style={{ background: "rgba(34,197,94,0.1)" }}>
               <div className="text-xl font-bold" style={{ color: "#4ade80" }}>{syncResult.synced}</div>
               <div className="text-xs mt-1" style={{ color: "#64748b" }}>Synced</div>

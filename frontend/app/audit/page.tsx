@@ -141,7 +141,7 @@ export default function AuditPage() {
   const toggle = (id: string) => setExpanded(prev => prev === id ? null : id);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold" style={{ color: '#f1f5f9' }}>Report History</h1>

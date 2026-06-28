@@ -121,16 +121,29 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="flex h-full" style={{ height: "calc(100vh - 0px)" }}>
-      {/* Left Panel: Chat (40%) */}
+    <div className="flex flex-col md:flex-row" style={{ minHeight: "calc(100vh - 56px)" }}>
+      <style>{`
+        @media (min-width: 768px) {
+          .report-chat-panel {
+            width: 40%;
+            height: calc(100vh - 0px);
+            position: sticky;
+            top: 0;
+            border-bottom: none !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .report-chat-panel {
+            height: 60vh;
+          }
+        }
+      `}</style>
+      {/* Left Panel: Chat (full on mobile, 40% on desktop) */}
       <div
-        className="flex flex-col"
+        className="report-chat-panel flex flex-col"
         style={{
-          width: "40%",
           borderRight: "1px solid #334155",
-          height: "100vh",
-          position: "sticky",
-          top: 0,
+          borderBottom: "1px solid #334155",
         }}
       >
         {/* Header */}
@@ -214,8 +227,8 @@ export default function ReportsPage() {
 
             {/* Tabs */}
             <div
-              className="flex gap-1 px-6"
-              style={{ borderBottom: "1px solid #334155" }}
+              className="flex gap-1 px-4 overflow-x-auto"
+              style={{ borderBottom: "1px solid #334155", scrollbarWidth: "none" }}
             >
               {TABS.map((tab) => (
                 <button
@@ -255,7 +268,7 @@ export default function ReportsPage() {
                         <h4 className="text-sm font-semibold" style={{ color: "#94a3b8" }}>
                           eDavki XML Documents — {activeReport.xmlData.entry_count ?? 0} purchase entries
                         </h4>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {[
                             { key: "kpr_xml", label: "KPR XML", desc: "Knjiga Prejetih Računov", filename: "kpr.xml" },
                             { key: "ddvo_xml", label: "DDV-O XML", desc: "Periodična DDV napoved", filename: "ddvo.xml" },
@@ -283,7 +296,7 @@ export default function ReportsPage() {
                         {activeReport.xmlData.boxes && (
                           <div>
                             <p className="text-xs font-semibold mb-2" style={{ color: "#64748b" }}>DDV-O Box Values</p>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {Object.entries(activeReport.xmlData.boxes as Record<string, string>).map(([box, val]) => (
                                 <div key={box} className="rounded-lg px-3 py-2 text-center"
                                   style={{ background: "#0f172a", border: "1px solid #334155" }}>

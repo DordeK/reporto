@@ -37,7 +37,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold" style={{ color: "#f1f5f9", letterSpacing: "-0.02em" }}>
@@ -58,7 +58,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <StatsCard
           title="Total Invoices"
           value={stats?.totalInvoices ?? 0}
@@ -86,14 +86,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <VatBarChart vatByRate={stats?.vatByRate ?? []} loading={loading} />
         <SourcePieChart bySource={stats?.invoicesBySource ?? { upload: 0 }} loading={loading} />
       </div>
 
       {/* Bottom Row: Recent Reports + Quick Actions */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
           <RecentReports reports={reports} loading={loading} />
         </div>
 

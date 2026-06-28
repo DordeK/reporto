@@ -223,7 +223,7 @@ BEGIN
         FOR j IN 1..v_line_count LOOP
             IF j < v_line_count THEN
                 -- Take a random slice between 10% and 60% of remaining
-                v_line_amt := ROUND(v_remaining * (0.10 + random() * 0.50), 2);
+                v_line_amt := ROUND((v_remaining * (0.10 + random() * 0.50))::numeric, 2);
             ELSE
                 v_line_amt := ROUND(v_remaining, 2);
             END IF;

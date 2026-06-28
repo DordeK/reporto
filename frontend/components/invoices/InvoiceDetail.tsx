@@ -55,7 +55,7 @@ export default function InvoiceDetailComponent({ invoice }: InvoiceDetailProps) 
           <ArrowLeft size={14} />
           Back to Invoices
         </Link>
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: "#f1f5f9", letterSpacing: "-0.02em" }}>
               {invoice.invoice_number}
@@ -99,7 +99,7 @@ export default function InvoiceDetailComponent({ invoice }: InvoiceDetailProps) 
               )}
             </div>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <div className="text-3xl font-bold" style={{ color: "#f1f5f9" }}>
               {formatEur(invoice.payable_amount, invoice.currency)}
             </div>
@@ -111,7 +111,7 @@ export default function InvoiceDetailComponent({ invoice }: InvoiceDetailProps) 
       </div>
 
       {/* Supplier / Customer */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           {
             label: "Supplier",
@@ -172,7 +172,7 @@ export default function InvoiceDetailComponent({ invoice }: InvoiceDetailProps) 
 
       {/* Dates & Amounts */}
       <div
-        className="rounded-xl p-4 grid grid-cols-4 gap-4"
+        className="rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4"
         style={{ background: "#1e293b", border: "1px solid #334155" }}
       >
         {[

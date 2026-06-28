@@ -22,7 +22,7 @@ export default function InvoiceDetailPage() {
   }, [id]);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
       {loading && (
         <div className="flex items-center justify-center py-20">
           <Loader2 size={28} className="animate-spin" color="#3b82f6" />

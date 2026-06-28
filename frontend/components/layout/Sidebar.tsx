@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Zap,
   Shield,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { listAnomalies } from "@/lib/api";
@@ -22,7 +23,7 @@ const navItems = [
   { href: "/audit", label: "Audit Log", icon: Shield },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const [anomalyCount, setAnomalyCount] = useState(0);
 
@@ -46,18 +47,35 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div
-        className="flex items-center gap-2 px-6 py-5"
+        className="flex items-center justify-between px-4 py-5"
         style={{ borderBottom: "1px solid #334155" }}
       >
-        <div
-          className="flex items-center justify-center rounded-lg"
-          style={{ width: 32, height: 32, background: "#3b82f6" }}
-        >
-          <Zap size={18} color="#fff" fill="#fff" />
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center justify-center rounded-lg"
+            style={{ width: 32, height: 32, background: "#3b82f6" }}
+          >
+            <Zap size={18} color="#fff" fill="#fff" />
+          </div>
+          <span className="font-bold text-lg" style={{ color: "#f1f5f9", letterSpacing: "-0.02em" }}>
+            Reporto
+          </span>
         </div>
-        <span className="font-bold text-lg" style={{ color: "#f1f5f9", letterSpacing: "-0.02em" }}>
-          Reporto
-        </span>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden flex items-center justify-center rounded-lg"
+            style={{
+              width: 30,
+              height: 30,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid #334155",
+              cursor: "pointer",
+            }}
+          >
+            <X size={15} color="#94a3b8" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -73,6 +91,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className="flex items-center justify-between rounded-lg px-3 py-2.5 transition-all duration-150 group"
               style={{
                 background: isActive ? "rgba(59, 130, 246, 0.15)" : "transparent",
